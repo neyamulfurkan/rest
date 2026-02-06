@@ -89,15 +89,15 @@ export async function GET(request: NextRequest) {
           return tomorrow;
         })();
 
-    // Ensure date is in the future
+    // Ensure date is today or in the future
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     
-    if (forecastDate < now) {
+    if (forecastDate.getTime() < now.getTime() - 86400000) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forecast date must be in the future',
+          error: 'Forecast date must be today or in the future',
         },
         { status: 400 }
       );
@@ -145,11 +145,11 @@ export async function GET(request: NextRequest) {
       }
 
       // Insufficient historical data
-      if (error.message.includes('insufficient') || error.message.includes('historical data')) {
+      if (error.message.includes('Insufficient') || error.message.includes('historical data') || error.message.includes('completed orders')) {
         return NextResponse.json(
           {
             success: false,
-            error: 'Insufficient historical data to generate forecast. Please ensure you have at least 7 days of order history.',
+            error: error.message, // Pass through the actual error from service
           },
           { status: 400 }
         );

@@ -68,8 +68,15 @@ async function main() {
   console.log('   Password: admin123');
 
   // Create sample categories
-  const appetizers = await prisma.category.create({
-    data: {
+  const appetizers = await prisma.category.upsert({
+    where: {
+      restaurantId_name: {
+        restaurantId: restaurant.id,
+        name: 'Appetizers',
+      },
+    },
+    update: {},
+    create: {
       name: 'Appetizers',
       description: 'Start your meal right',
       sortOrder: 1,
@@ -78,8 +85,15 @@ async function main() {
     },
   });
 
-  const mainCourse = await prisma.category.create({
-    data: {
+  const mainCourse = await prisma.category.upsert({
+    where: {
+      restaurantId_name: {
+        restaurantId: restaurant.id,
+        name: 'Main Course',
+      },
+    },
+    update: {},
+    create: {
       name: 'Main Course',
       description: 'Hearty main dishes',
       sortOrder: 2,
@@ -91,7 +105,14 @@ async function main() {
   console.log('✅ Categories created');
 
   // Create sample menu items
-  const pizza = await prisma.menuItem.create({
+  const existingPizza = await prisma.menuItem.findFirst({
+    where: {
+      restaurantId: restaurant.id,
+      name: 'Margherita Pizza',
+    },
+  });
+
+  const pizza = existingPizza || await prisma.menuItem.create({
     data: {
       name: 'Margherita Pizza',
       description: 'Classic pizza with fresh mozzarella',
@@ -103,7 +124,14 @@ async function main() {
     },
   });
 
-  const pasta = await prisma.menuItem.create({
+  const existingPasta = await prisma.menuItem.findFirst({
+    where: {
+      restaurantId: restaurant.id,
+      name: 'Spaghetti Carbonara',
+    },
+  });
+
+  const pasta = existingPasta || await prisma.menuItem.create({
     data: {
       name: 'Spaghetti Carbonara',
       description: 'Creamy pasta with bacon',
@@ -117,8 +145,12 @@ async function main() {
   console.log('✅ Menu items created');
 
   // Create sample customer
-  const customer = await prisma.customer.create({
-    data: {
+  const customer = await prisma.customer.upsert({
+    where: {
+      email: 'customer@example.com',
+    },
+    update: {},
+    create: {
       email: 'customer@example.com',
       name: 'John Doe',
       phone: '+1234567890',

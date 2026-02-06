@@ -32,16 +32,16 @@ export function useOrders(customerId?: string, status?: string) {
   return useQuery<OrdersResponse>({
     queryKey: ['orders', customerId, status],
     queryFn: async () => {
-      // Get restaurant ID from session or fetch from database
+      // Get restaurant ID from settings or fetch from database
       let restaurantId = 'cml1q2zai0000b3gh1wuau3so'; // Fallback
       
       try {
-        // Try to get the actual restaurant ID from database
-        const restaurantResponse = await fetch('/api/restaurants/current');
-        if (restaurantResponse.ok) {
-          const restaurantData = await restaurantResponse.json();
-          if (restaurantData.success && restaurantData.data?.id) {
-            restaurantId = restaurantData.data.id;
+        // Try to get the actual restaurant ID from settings
+        const settingsResponse = await fetch('/api/settings');
+        if (settingsResponse.ok) {
+          const settingsData = await settingsResponse.json();
+          if (settingsData.success && settingsData.data?.id) {
+            restaurantId = settingsData.data.id;
           }
         }
       } catch (error) {
@@ -56,7 +56,9 @@ export function useOrders(customerId?: string, status?: string) {
       const response = await fetch(`/api/orders?${params.toString()}`);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch orders');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Orders API Error:', errorData);
+        throw new Error(errorData.error || 'Failed to fetch orders');
       }
       
       const result = await response.json();

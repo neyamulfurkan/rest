@@ -14,11 +14,28 @@ export async function GET(request: NextRequest) {
   try {
     // Authentication check
     const session = await getServerSession();
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    // Get restaurant ID from session or use first restaurant (for development)
+    let restaurantId = session.user.restaurantId;
+    
+    // Fallback: If no restaurantId in session, get the first restaurant
+    if (!restaurantId) {
+      const firstRestaurant = await prisma.restaurant.findFirst({
+        select: { id: true }
+      });
+      if (!firstRestaurant) {
+        return NextResponse.json(
+          { success: false, error: 'No restaurant found' },
+          { status: 404 }
+        );
+      }
+      restaurantId = firstRestaurant.id;
     }
 
     // Extract query parameters
@@ -42,6 +59,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     const where: any = {
+      restaurantId: restaurantId,
       // Exclude guests if needed (optional)
       // isGuest: false,
     };

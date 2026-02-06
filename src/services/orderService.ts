@@ -256,13 +256,20 @@ export async function getOrders(
     if (filters?.status) {
       const statusArray = Array.isArray(filters.status) 
         ? filters.status 
-        : filters.status.includes(',')
-        ? filters.status.split(',')
+        : typeof filters.status === 'string' && filters.status.includes(',')
+        ? filters.status.split(',').map(s => s.trim())
         : [filters.status];
       
-      where.status = statusArray.length > 1 
-        ? { in: statusArray }
-        : statusArray[0];
+      // Ensure statusArray contains valid OrderStatus values
+      const validStatuses = statusArray.filter(s => 
+        ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED', 'REJECTED'].includes(s)
+      );
+      
+      if (validStatuses.length > 0) {
+        where.status = validStatuses.length > 1 
+          ? { in: validStatuses }
+          : validStatuses[0];
+      }
     }
 
     if (filters?.type) {

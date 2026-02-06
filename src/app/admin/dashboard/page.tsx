@@ -73,15 +73,13 @@ export default function AdminDashboardPage() {
   const [orderTypeCounts, setOrderTypeCounts] = useState<OrderTypeCount[]>([]);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [allOrders, setAllOrders] = useState<any[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
-
-  // Store orders and bookings at component level for generateTrendData
-  const [allOrders, setAllOrders] = useState<any[]>([]);
-  const [allBookings, setAllBookings] = useState<any[]>([]);
 
   async function loadDashboardData() {
     try {

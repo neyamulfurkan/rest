@@ -72,18 +72,34 @@ export default function AIForecastWidget({ restaurantId }: AIForecastWidgetProps
       setIsLoading(true);
       setError(null);
 
+      // Validate restaurantId before making request
+      if (!restaurantId) {
+        setError('Restaurant ID is missing. Please refresh the page.');
+        setIsLoading(false);
+        return;
+      }
+
       // Generate forecast for tomorrow (ensure we're sending proper date)
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0); // Reset time to midnight
+      tomorrow.setHours(23, 59, 59, 999); // Set to end of day to include today's orders
 
       // Format date as YYYY-MM-DD for API
       const dateString = tomorrow.toISOString().split('T')[0];
 
+      console.log('📊 Requesting forecast for restaurant:', restaurantId, 'date:', dateString);
+
       // Call API route instead of direct service
-      const response = await fetch(`/api/ai/forecast?restaurantId=${restaurantId}&date=${dateString}`);
-      if (!response.ok) throw new Error('Failed to fetch forecast');
+      const response = await fetch(`/api/ai/forecast?restaurantId=${encodeURIComponent(restaurantId)}&date=${dateString}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ Forecast API error:', response.status, errorData);
+        throw new Error(errorData.error || `Failed to fetch forecast (${response.status})`);
+      }
+      
       const result = await response.json();
+      console.log('✅ Forecast API response:', result);
       
       // Handle API response structure (result.data contains the actual forecast)
       const forecastData = result.data || result;
@@ -99,21 +115,55 @@ export default function AIForecastWidget({ restaurantId }: AIForecastWidgetProps
       const chart: ChartDataPoint[] = [];
       const today = new Date();
 
-      // Historical data - fetch from actual orders
-      // Group historical orders by date
-      const salesByDate: Record<string, number> = {};
-      const last7Days = new Date(today);
-      last7Days.setDate(last7Days.getDate() - 6);
+      // Fetch REAL historical sales data from API
+      const salesResponse = await fetch(`/api/orders?restaurantId=${encodeURIComponent(restaurantId)}`);
       
-      // Fetch actual sales from API or use forecast data
-      // For now, use small actual values from database
+      if (!salesResponse.ok) {
+        console.warn('⚠️ Could not fetch historical orders for chart, using forecast data only');
+        // Continue without historical data - just show forecast
+        const chart: ChartDataPoint[] = [];
+        
+        // Show only predicted data (next 7 days)
+        for (let i = 1; i <= 7; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() + i);
+          const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          
+          const predictedSales = i === 1 
+            ? forecastData.predictedRevenue
+            : forecastData.predictedRevenue * (0.9 + Math.random() * 0.2);
+          
+          chart.push({
+            date: dateStr,
+            predicted: predictedSales,
+            isPrediction: true,
+          });
+        }
+        
+        setChartData(chart);
+        return; // Skip the rest of chart building
+      }
+      
+      const salesData = await salesResponse.json();
+      const allOrders = salesData.success ? (salesData.data || []) : [];
+      
+      // Group historical orders by date
       for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+        const nextDate = new Date(date);
+        nextDate.setDate(nextDate.getDate() + 1);
+        
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         
-        // Use actual sales (very low because you only have $1.09 total)
-        const actualSales = i === 0 ? 0.77 : (i === 1 ? 0.322 : 0);
+        // Calculate actual sales for this day
+        const dayOrders = allOrders.filter((o: { createdAt: string; status: string }) => {
+          const orderDate = new Date(o.createdAt);
+          return orderDate >= date && orderDate < nextDate && !['CANCELLED', 'REJECTED'].includes(o.status);
+        });
+        
+        const actualSales = dayOrders.reduce((sum: number, o: { totalAmount: number }) => sum + o.totalAmount, 0);
         
         chart.push({
           date: dateStr,
@@ -128,10 +178,10 @@ export default function AIForecastWidget({ restaurantId }: AIForecastWidgetProps
         date.setDate(date.getDate() + i);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         
-        // Use forecast data for tomorrow, extrapolate for other days
+        // Use forecast data for tomorrow, extrapolate for other days with variation
         const predictedSales = i === 1 
-          ? (forecastData.predictedRevenue || 2000)
-          : (forecastData.predictedRevenue || 2000) * (0.9 + Math.random() * 0.2);
+          ? forecastData.predictedRevenue
+          : forecastData.predictedRevenue * (0.9 + Math.random() * 0.2);
         
         chart.push({
           date: dateStr,
@@ -149,14 +199,19 @@ export default function AIForecastWidget({ restaurantId }: AIForecastWidgetProps
 
       setChartData(chart);
     } catch (err) {
-      console.error('Failed to load forecast:', err);
+      console.error('❌ Failed to load forecast:', err);
       
       // Check if error is due to insufficient data
       const errorMessage = err instanceof Error ? err.message : '';
-      if (errorMessage.includes('Insufficient historical data') || errorMessage.includes('DELIVERED')) {
-        setError('Not enough completed orders for AI forecasting. You need at least 2 orders with status "DELIVERED". Current orders must be marked as DELIVERED to count toward forecasting data.');
+      
+      if (errorMessage.includes('Insufficient') || errorMessage.includes('historical data') || errorMessage.includes('DELIVERED') || errorMessage.includes('completed orders')) {
+        setError('⚠️ Not enough data for AI forecasting. You need at least 2 orders with status "DELIVERED". Current orders must be completed (status changed to DELIVERED) to count toward forecasting data. Please complete some orders and try again.');
+      } else if (errorMessage.includes('API key') || errorMessage.includes('not configured')) {
+        setError('AI features not configured. Please add your Groq API key in Settings > AI Features.');
+      } else if (errorMessage.includes('Restaurant ID')) {
+        setError('Restaurant configuration error. Please contact support.');
       } else {
-        setError('Failed to generate forecast. Please try again.');
+        setError(errorMessage || 'Failed to generate forecast. Please try again.');
       }
     } finally {
       setIsLoading(false);

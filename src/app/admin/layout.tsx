@@ -62,9 +62,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
     const fetchActiveOrders = async () => {
       try {
-        // TODO: Get actual restaurant ID from auth/context
-        const restaurantId = 'cml1q2zai0000b3gh1wuau3so';
-        const response = await fetch(`/api/orders?restaurantId=${restaurantId}&status=PENDING,ACCEPTED,PREPARING`);
+        // Get restaurant ID from session or fetch from API
+        const restaurantId = session?.user?.restaurantId || 'cml1q2zai0000b3gh1wuau3so';
+        
+        if (!restaurantId) {
+          console.warn('No restaurant ID available for fetching orders');
+          return;
+        }
+        
+        const response = await fetch(`/api/orders?restaurantId=${encodeURIComponent(restaurantId)}&status=PENDING,ACCEPTED,PREPARING`);
         if (response.ok) {
           const data = await response.json();
           setActiveOrdersCount(data.pagination?.total || data.total || 0);

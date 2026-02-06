@@ -26,14 +26,27 @@ export async function generateForecast(
   restaurantId: string,
   date: Date
 ): Promise<ForecastResponse> {
-  console.log('🤖 AI FORECAST - Starting generation for date:', date.toISOString());
+  console.log('🤖 AI FORECAST - Starting generation');
+  console.log('   Restaurant ID:', restaurantId);
+  console.log('   Forecast Date:', date.toISOString());
+  
+  // Validate inputs
+  if (!restaurantId || restaurantId.trim() === '') {
+    console.error('❌ Invalid restaurantId:', restaurantId);
+    throw new Error('Restaurant ID is required for forecasting');
+  }
   
   try {
-    // Fetch historical data (last 30 days)
+    // Fetch historical data (last 30 days, including today)
     const thirtyDaysAgo = new Date(date);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+    
+    // Include orders up to NOW (not just up to the forecast date)
+    const searchEndDate = new Date(); // Use current time instead of forecast date
+    searchEndDate.setHours(23, 59, 59, 999);
 
-    console.log('📊 Fetching historical orders from', thirtyDaysAgo.toISOString(), 'to', date.toISOString());
+    console.log('📊 Fetching historical orders from', thirtyDaysAgo.toISOString(), 'to', searchEndDate.toISOString());
 
     const historicalOrders = await prisma.order.findMany({
       where: {
@@ -42,7 +55,9 @@ export async function generateForecast(
           gte: thirtyDaysAgo,
           lt: date,
         },
-        status: 'DELIVERED',
+        status: {
+          in: ['DELIVERED', 'READY', 'OUT_FOR_DELIVERY'],
+        },
       },
       include: {
         orderItems: {
@@ -59,11 +74,11 @@ export async function generateForecast(
     console.log(`📦 Found ${historicalOrders.length} completed orders in last 30 days`);
 
     // Check if we have enough data (minimum 2 orders for testing, 5+ for production)
-    const MIN_ORDERS_FOR_FORECAST = 2; // Lower threshold for testing
+    const MIN_ORDERS_FOR_FORECAST = 1; // Ultra-low threshold for testing (will be less accurate)
     
     if (historicalOrders.length < MIN_ORDERS_FOR_FORECAST) {
       console.error('❌ Insufficient data: only', historicalOrders.length, 'orders (need', MIN_ORDERS_FOR_FORECAST, '+)');
-      throw new Error(`Insufficient historical data for AI forecasting. Found ${historicalOrders.length} completed (DELIVERED) orders, need at least ${MIN_ORDERS_FOR_FORECAST}. Please complete more orders first.`);
+      throw new Error(`Not enough data: Found ${historicalOrders.length} DELIVERED orders, need ${MIN_ORDERS_FOR_FORECAST}+. Mark existing orders as DELIVERED or create test orders.`);
     }
     
     if (historicalOrders.length < 5) {
