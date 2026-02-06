@@ -72,12 +72,16 @@ export default function AIForecastWidget({ restaurantId }: AIForecastWidgetProps
       setIsLoading(true);
       setError(null);
 
-      // Generate forecast for tomorrow
+      // Generate forecast for tomorrow (ensure we're sending proper date)
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0); // Reset time to midnight
+
+      // Format date as YYYY-MM-DD for API
+      const dateString = tomorrow.toISOString().split('T')[0];
 
       // Call API route instead of direct service
-      const response = await fetch(`/api/ai/forecast?restaurantId=${restaurantId}&date=${tomorrow.toISOString()}`);
+      const response = await fetch(`/api/ai/forecast?restaurantId=${restaurantId}&date=${dateString}`);
       if (!response.ok) throw new Error('Failed to fetch forecast');
       const result = await response.json();
       

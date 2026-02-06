@@ -79,6 +79,10 @@ export default function AdminDashboardPage() {
     loadDashboardData();
   }, []);
 
+  // Store orders and bookings at component level for generateTrendData
+  const [allOrders, setAllOrders] = useState<any[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+
   async function loadDashboardData() {
     try {
       setIsLoading(true);
@@ -104,8 +108,15 @@ export default function AdminDashboardPage() {
       const ordersData = await ordersRes.json();
       const bookingsData = await bookingsRes.json();
 
-      const allOrders = ordersData.success ? (ordersData.data || []) : [];
-      const allBookings = bookingsData.success ? (bookingsData.data || []) : [];
+      const fetchedOrders = ordersData.success ? (ordersData.data || []) : [];
+      const fetchedBookings = bookingsData.success ? (bookingsData.data || []) : [];
+
+      // Store in state for use by generateTrendData
+      setAllOrders(fetchedOrders);
+      setAllBookings(fetchedBookings);
+
+      const allOrders = fetchedOrders;
+      const allBookings = fetchedBookings;
 
       // Calculate stats from orders
       const today = new Date();
@@ -231,12 +242,37 @@ export default function AdminDashboardPage() {
     ? ((stats.totalSalesToday - stats.totalSalesYesterday) / stats.totalSalesYesterday) * 100
     : 0;
 
-  // Generate trend data for KPI cards (last 7 days - mock data)
-  const generateTrendData = (baseValue: number) => {
-    return Array.from({ length: 7 }, () => {
-      const variation = (Math.random() - 0.5) * 0.3;
-      return Math.max(0, baseValue * (1 + variation));
-    });
+  // Generate REAL trend data for KPI cards from last 7 days
+  const generateTrendData = (metricType: 'sales' | 'orders' | 'bookings') => {
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+
+      if (metricType === 'sales') {
+        const dayOrders = allOrders.filter((o: { createdAt: string; status: string }) => {
+          const orderDate = new Date(o.createdAt);
+          return orderDate >= date && orderDate < nextDate && !['CANCELLED', 'REJECTED'].includes(o.status);
+        });
+        last7Days.push(dayOrders.reduce((sum: number, o: { totalAmount: number }) => sum + o.totalAmount, 0));
+      } else if (metricType === 'orders') {
+        const dayOrders = allOrders.filter((o: { createdAt: string; status: string }) => {
+          const orderDate = new Date(o.createdAt);
+          return orderDate >= date && orderDate < nextDate && ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY'].includes(o.status);
+        });
+        last7Days.push(dayOrders.length);
+      } else if (metricType === 'bookings') {
+        const dayBookings = allBookings.filter((b: { date: string }) => {
+          const bookingDate = new Date(b.date);
+          return bookingDate >= date && bookingDate < nextDate;
+        });
+        last7Days.push(dayBookings.length);
+      }
+    }
+    return last7Days;
   };
 
   return (
@@ -255,22 +291,22 @@ export default function AdminDashboardPage() {
           title="Total Sales Today"
           value={stats.totalSalesToday}
           change={salesChange}
-          trendData={generateTrendData(stats.totalSalesToday)}
+          trendData={generateTrendData('sales')}
           isCurrency
         />
 
         <KPICard
           title="Active Orders"
           value={stats.activeOrders}
-          change={5.2}
-          trendData={generateTrendData(stats.activeOrders)}
+          change={0}
+          trendData={generateTrendData('orders')}
         />
 
         <KPICard
           title="Today's Bookings"
           value={stats.todayBookings}
-          change={-2.1}
-          trendData={generateTrendData(stats.todayBookings)}
+          change={0}
+          trendData={generateTrendData('bookings')}
         />
 
         <Card className="rounded-2xl shadow-md p-6 bg-card border-border">

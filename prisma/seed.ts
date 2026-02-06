@@ -67,7 +67,120 @@ async function main() {
   console.log('✅ Admin user created:', admin.email);
   console.log('   Password: admin123');
 
+  // Create sample categories
+  const appetizers = await prisma.category.create({
+    data: {
+      name: 'Appetizers',
+      description: 'Start your meal right',
+      sortOrder: 1,
+      isActive: true,
+      restaurantId: restaurant.id,
+    },
+  });
+
+  const mainCourse = await prisma.category.create({
+    data: {
+      name: 'Main Course',
+      description: 'Hearty main dishes',
+      sortOrder: 2,
+      isActive: true,
+      restaurantId: restaurant.id,
+    },
+  });
+
+  console.log('✅ Categories created');
+
+  // Create sample menu items
+  const pizza = await prisma.menuItem.create({
+    data: {
+      name: 'Margherita Pizza',
+      description: 'Classic pizza with fresh mozzarella',
+      price: 12.99,
+      isAvailable: true,
+      isVegetarian: true,
+      categoryId: mainCourse.id,
+      restaurantId: restaurant.id,
+    },
+  });
+
+  const pasta = await prisma.menuItem.create({
+    data: {
+      name: 'Spaghetti Carbonara',
+      description: 'Creamy pasta with bacon',
+      price: 14.99,
+      isAvailable: true,
+      categoryId: mainCourse.id,
+      restaurantId: restaurant.id,
+    },
+  });
+
+  console.log('✅ Menu items created');
+
+  // Create sample customer
+  const customer = await prisma.customer.create({
+    data: {
+      email: 'customer@example.com',
+      name: 'John Doe',
+      phone: '+1234567890',
+      isGuest: false,
+      restaurantId: restaurant.id,
+    },
+  });
+
+  console.log('✅ Customer created');
+
+  // Create sample DELIVERED orders (for AI forecasting to work)
+  const ordersToCreate = [];
+  for (let i = 0; i < 15; i++) {
+    const daysAgo = Math.floor(i / 2); // 2 orders per day for last 7 days
+    const orderDate = new Date();
+    orderDate.setDate(orderDate.getDate() - daysAgo);
+    
+    ordersToCreate.push({
+      orderNumber: `ORD-${Date.now()}-${i}`,
+      type: ['DINE_IN', 'PICKUP', 'DELIVERY'][i % 3] as any,
+      status: 'DELIVERED' as any,
+      customerId: customer.id,
+      restaurantId: restaurant.id,
+      subtotal: 25 + (i * 5),
+      taxAmount: 2.5,
+      serviceFee: 2.0,
+      tipAmount: 3.0,
+      discountAmount: 0,
+      totalAmount: 32.5 + (i * 5),
+      paymentMethod: 'CASH' as any,
+      paymentStatus: 'COMPLETED' as any,
+      createdAt: orderDate,
+      updatedAt: orderDate,
+    });
+  }
+
+  // Bulk create orders
+  await prisma.order.createMany({
+    data: ordersToCreate,
+  });
+
+  // Create order items for each order
+  const orders = await prisma.order.findMany({
+    where: { restaurantId: restaurant.id },
+  });
+
+  for (const order of orders) {
+    await prisma.orderItem.create({
+      data: {
+        orderId: order.id,
+        menuItemId: pizza.id,
+        name: pizza.name,
+        price: pizza.price,
+        quantity: 2,
+      },
+    });
+  }
+
+  console.log(`✅ Created ${orders.length} sample DELIVERED orders with items`);
+
   console.log('\n🎉 Seed completed successfully!');
+  console.log('\n📊 Database now has real data for AI forecasting and dashboard metrics');
 }
 
 main()
