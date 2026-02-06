@@ -108,6 +108,11 @@ export async function GET(_request: NextRequest) {
       headerTransparentOverMedia: settingsObject.headerTransparentOverMedia || false,
       groqApiKey: settingsObject.groqApiKey || null,
       enableAiFeatures: settingsObject.enableAiFeatures || false,
+      cloudinaryCloudName: settingsObject.cloudinaryCloudName || null,
+      cloudinaryApiKey: settingsObject.cloudinaryApiKey || null,
+      cloudinaryApiSecret: settingsObject.cloudinaryApiSecret || null,
+      cloudinaryAutoOptimize: settingsObject.cloudinaryAutoOptimize !== false,
+      cloudinaryAutoFormat: settingsObject.cloudinaryAutoFormat !== false,
     };
 
     return NextResponse.json(
@@ -323,7 +328,12 @@ export async function POST(request: NextRequest) {
       'headerTransparentOverMedia',
       'floorPlanImageUrl',
       'groqApiKey',
-      'enableAiFeatures'
+      'enableAiFeatures',
+      'cloudinaryCloudName',
+      'cloudinaryApiKey',
+      'cloudinaryApiSecret',
+      'cloudinaryAutoOptimize',
+      'cloudinaryAutoFormat'
     ];
     
     for (const key of customSettingsKeys) {

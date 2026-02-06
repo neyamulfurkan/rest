@@ -929,12 +929,7 @@ export default function AdminSettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    console.log('🔵 SAVING SETTINGS:', {
-      heroMediaType: settings.heroMediaType,
-      heroVideoUrl: settings.heroVideoUrl,
-      heroImages: settings.heroImages,
-      heroSlideshowInterval: settings.heroSlideshowInterval,
-    });
+    console.log('🔵 SAVING SETTINGS - Full payload:', settings);
     try {
       const response = await fetch('/api/settings', {
         method: 'POST',
