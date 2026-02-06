@@ -931,12 +931,18 @@ export default function AdminSettingsPage() {
     setIsSaving(true);
     console.log('🔵 SAVING SETTINGS - Full payload:', settings);
     try {
+      // Ensure groqApiKey is saved as JSON string in database
+      const settingsToSave = {
+        ...settings,
+        groqApiKey: settings.groqApiKey ? settings.groqApiKey.trim() : null,
+      };
+      
       const response = await fetch('/api/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(settingsToSave),
       });
 
       if (!response.ok) {

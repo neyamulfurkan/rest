@@ -40,10 +40,19 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
+    // Get restaurant ID from session
+    const restaurantId = (session.user as any)?.restaurantId;
+    
+    if (!restaurantId) {
+      return NextResponse.json(
+        { success: false, error: 'Restaurant ID not found in session' },
+        { status: 400 }
+      );
+    }
+
     // Build where clause
     const where: any = {
-      // Exclude guests if needed (optional)
-      // isGuest: false,
+      restaurantId: restaurantId,
     };
 
     // Search filter (name, email, phone)

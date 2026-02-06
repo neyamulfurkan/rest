@@ -58,9 +58,19 @@ export async function GET(request: NextRequest) {
     const dateParam = searchParams.get('date');
 
     // Validate input
+    if (!restaurantId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Restaurant ID is required',
+        },
+        { status: 400 }
+      );
+    }
+
     const validationResult = forecastQuerySchema.safeParse({
       restaurantId,
-      date: dateParam,
+      date: dateParam || undefined,
     });
 
     if (!validationResult.success) {

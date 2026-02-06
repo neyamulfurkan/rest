@@ -144,7 +144,17 @@ ${JSON.stringify(dailyStats, null, 2)}
       },
     });
 
-    const apiKey = apiKeySetting?.value ? JSON.parse(apiKeySetting.value) : process.env.GROQ_API_KEY;
+    // Handle both JSON string and plain string from database
+    let apiKey = process.env.GROQ_API_KEY;
+    if (apiKeySetting?.value) {
+      try {
+        // Try parsing as JSON first (old format)
+        apiKey = JSON.parse(apiKeySetting.value);
+      } catch {
+        // If not JSON, use as plain string (new format)
+        apiKey = apiKeySetting.value;
+      }
+    }
     
     if (!apiKey) {
       console.error('❌ No Groq API key found in settings or environment');
@@ -428,7 +438,14 @@ Suggest 3 items that would complement the current cart. Consider:
         },
       });
 
-      const apiKey = apiKeySetting?.value ? JSON.parse(apiKeySetting.value) : process.env.GROQ_API_KEY;
+      let apiKey = process.env.GROQ_API_KEY;
+      if (apiKeySetting?.value) {
+        try {
+          apiKey = JSON.parse(apiKeySetting.value);
+        } catch {
+          apiKey = apiKeySetting.value;
+        }
+      }
       if (!apiKey) {
         throw new Error('AI service not configured. Please add your Groq API key in Settings.');
       }
@@ -588,7 +605,14 @@ ${tables.map(t =>
         },
       });
 
-      const apiKey = apiKeySetting?.value ? JSON.parse(apiKeySetting.value) : process.env.GROQ_API_KEY;
+      let apiKey = process.env.GROQ_API_KEY;
+      if (apiKeySetting?.value) {
+        try {
+          apiKey = JSON.parse(apiKeySetting.value);
+        } catch {
+          apiKey = apiKeySetting.value;
+        }
+      }
       if (!apiKey) {
         throw new Error('AI service not configured. Please add your Groq API key in Settings.');
       }
@@ -802,7 +826,14 @@ ${items.slice(0, 10).map(item => `- ID: ${item.id} | ${item.name} - $${item.pric
         throw new Error('AI features not enabled for this restaurant');
       }
 
-      const apiKey = apiKeySetting?.value ? JSON.parse(apiKeySetting.value) : process.env.GROQ_API_KEY;
+      let apiKey = process.env.GROQ_API_KEY;
+      if (apiKeySetting?.value) {
+        try {
+          apiKey = JSON.parse(apiKeySetting.value);
+        } catch {
+          apiKey = apiKeySetting.value;
+        }
+      }
       if (!apiKey) {
         throw new Error('AI service not configured');
       }

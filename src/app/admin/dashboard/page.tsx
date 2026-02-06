@@ -85,10 +85,24 @@ export default function AdminDashboardPage() {
 
       // Fetch stats from orders API
       // Get restaurant ID from session
-      const restaurantId = session?.user?.restaurantId || 'cml1q2zai0000b3gh1wuau3so';
-      const ordersRes = await fetch(`/api/orders?restaurantId=${restaurantId}&limit=100`);
-      const bookingsRes = await fetch(`/api/bookings?restaurantId=${restaurantId}&limit=100`);
+      const restaurantId = session?.user?.restaurantId;
+      
+      if (!restaurantId) {
+        console.error('No restaurant ID in session');
+        throw new Error('Restaurant ID not found');
+      }
 
+      const ordersRes = await fetch(`/api/orders?restaurantId=${restaurantId}&limit=1000`);
+      const bookingsRes = await fetch(`/api/bookings?restaurantId=${restaurantId}&limit=1000`);
+
+      if (!ordersRes.ok) {
+        console.error('Orders API error:', await ordersRes.text());
+      }
+      
+      if (!bookingsRes.ok) {
+        console.error('Bookings API error:', await bookingsRes.text());
+      }
+      
       if (!ordersRes.ok || !bookingsRes.ok) {
         throw new Error('Failed to load dashboard data');
       }

@@ -32,8 +32,21 @@ export function useOrders(customerId?: string, status?: string) {
   return useQuery<OrdersResponse>({
     queryKey: ['orders', customerId, status],
     queryFn: async () => {
-      // Get restaurant ID from settings store
-      const restaurantId = 'rest123456789'; // This matches your test restaurant ID
+      // Get restaurant ID from session or fetch from database
+      let restaurantId = 'cml1q2zai0000b3gh1wuau3so'; // Fallback
+      
+      try {
+        // Try to get the actual restaurant ID from database
+        const restaurantResponse = await fetch('/api/restaurants/current');
+        if (restaurantResponse.ok) {
+          const restaurantData = await restaurantResponse.json();
+          if (restaurantData.success && restaurantData.data?.id) {
+            restaurantId = restaurantData.data.id;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch restaurant ID:', error);
+      }
       
       const params = new URLSearchParams();
       params.append('restaurantId', restaurantId);
