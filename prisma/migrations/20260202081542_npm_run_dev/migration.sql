@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "Restaurant" ADD COLUMN     "floorPlanImageUrl" TEXT;
+
+-- AlterTable
+ALTER TABLE "Table" ADD COLUMN     "height" DOUBLE PRECISION NOT NULL DEFAULT 80,
+ADD COLUMN     "shape" TEXT NOT NULL DEFAULT 'circle',
+ADD COLUMN     "width" DOUBLE PRECISION NOT NULL DEFAULT 80;
