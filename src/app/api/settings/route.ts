@@ -108,6 +108,8 @@ export async function GET(_request: NextRequest) {
       headerTransparentOverMedia: settingsObject.headerTransparentOverMedia || false,
       groqApiKey: settingsObject.groqApiKey || null,
       enableAiFeatures: settingsObject.enableAiFeatures || false,
+      facebookUrl: settingsObject.facebookUrl || null,
+      instagramUrl: settingsObject.instagramUrl || null,
       cloudinaryCloudName: settingsObject.cloudinaryCloudName || null,
       cloudinaryApiKey: settingsObject.cloudinaryApiKey || null,
       cloudinaryApiSecret: settingsObject.cloudinaryApiSecret || null,
@@ -333,7 +335,12 @@ export async function POST(request: NextRequest) {
       'cloudinaryApiKey',
       'cloudinaryApiSecret',
       'cloudinaryAutoOptimize',
-      'cloudinaryAutoFormat'
+      'cloudinaryAutoFormat',
+      'facebookUrl',
+      'instagramUrl',
+      'kitchenPrinterIp',
+      'googleMapsApiKey',
+      'googleAnalyticsId'
     ];
     
     for (const key of customSettingsKeys) {

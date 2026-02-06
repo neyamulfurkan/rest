@@ -144,33 +144,28 @@ export default function Footer() {
               Follow Us
             </h3>
             <div className="flex gap-4">
-              <a 
-                href="https://facebook.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hover:opacity-80 transition-opacity"
-                aria-label="Facebook"
-              >
-                <Facebook className="w-6 h-6" style={{ color: branding.footerTextColor }} />
-              </a>
-              <a 
-                href="https://instagram.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hover:opacity-80 transition-opacity"
-                aria-label="Instagram"
-              >
+              {useSettingsStore.getState().facebookUrl && (
+                <a 
+                  href={useSettingsStore.getState().facebookUrl || '#'} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:opacity-80 transition-opacity"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="w-6 h-6" style={{ color: branding.footerTextColor }} />
+                </a>
+              )}
+              {useSettingsStore.getState().instagramUrl && (
+                <a 
+                  href={useSettingsStore.getState().instagramUrl || '#'} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:opacity-80 transition-opacity"
+                  aria-label="Instagram"
+                >
                 <Instagram className="w-6 h-6" style={{ color: branding.footerTextColor }} />
-              </a>
-              <a 
-                href="https://twitter.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hover:opacity-80 transition-opacity"
-                aria-label="Twitter"
-              >
-                <Twitter className="w-6 h-6" style={{ color: branding.footerTextColor }} />
-              </a>
+                </a>
+              )}
             </div>
           </div>
         </div>

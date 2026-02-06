@@ -69,6 +69,8 @@ interface RestaurantData {
   bookingDepositAmount?: number;
   groqApiKey?: string | null;
   enableAiFeatures?: boolean;
+  facebookUrl?: string | null;
+  instagramUrl?: string | null;
   galleryImages?: any;
   showGalleryOnHome?: boolean;
   galleryCategories?: string[];
@@ -119,6 +121,10 @@ interface SettingsState {
   // AI Settings
   groqApiKey?: string | null;
   enableAiFeatures: boolean;
+  
+  // Social Media
+  facebookUrl: string | null;
+  instagramUrl: string | null;
   
   // Gallery & About
   galleryImages: any;
@@ -194,6 +200,8 @@ const initialState = {
   bookingDepositAmount: 0,
   groqApiKey: null,
   enableAiFeatures: false,
+  facebookUrl: null,
+  instagramUrl: null,
   galleryImages: [],
   showGalleryOnHome: true,
   galleryCategories: ['All', 'Food', 'Ambiance', 'Events'],
@@ -241,6 +249,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       bookingDepositAmount: settings.bookingDepositAmount !== undefined ? settings.bookingDepositAmount : state.bookingDepositAmount,
       groqApiKey: settings.groqApiKey !== undefined ? settings.groqApiKey : state.groqApiKey,
       enableAiFeatures: settings.enableAiFeatures !== undefined ? settings.enableAiFeatures : state.enableAiFeatures,
+      facebookUrl: settings.facebookUrl !== undefined ? settings.facebookUrl : state.facebookUrl,
+      instagramUrl: settings.instagramUrl !== undefined ? settings.instagramUrl : state.instagramUrl,
       galleryImages: settings.galleryImages !== undefined ? settings.galleryImages : state.galleryImages,
       showGalleryOnHome: settings.showGalleryOnHome !== undefined ? settings.showGalleryOnHome : state.showGalleryOnHome,
       galleryCategories: settings.galleryCategories !== undefined ? settings.galleryCategories : state.galleryCategories,
