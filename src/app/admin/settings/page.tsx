@@ -353,6 +353,13 @@ interface SettingsData {
   groqApiKey?: string | null;
   enableAiFeatures: boolean;
 
+  // Cloudinary Storage
+  cloudinaryCloudName?: string | null;
+  cloudinaryApiKey?: string | null;
+  cloudinaryApiSecret?: string | null;
+  cloudinaryAutoOptimize?: boolean;
+  cloudinaryAutoFormat?: boolean;
+
   // Notifications
   twilioAccountSid: string;
   twilioAuthToken: string;
@@ -1086,6 +1093,7 @@ export default function AdminSettingsPage() {
           <TabsTrigger value="booking">Booking</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="branding">Branding</TabsTrigger>
+          <TabsTrigger value="storage">Storage</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
           <TabsTrigger value="ai-settings">AI Settings</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
@@ -2434,6 +2442,207 @@ export default function AdminSettingsPage() {
                   placeholder="G-XXXXXXXXXX"
                 />
               </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Storage Settings Tab */}
+        <TabsContent value="storage" className="space-y-6">
+          <div className="rounded-lg border p-6" style={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
+            <h2 className="mb-4 text-xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Image Storage Configuration</h2>
+            <p className="mb-6 text-sm" style={{ color: 'hsl(var(--foreground) / 0.7)' }}>
+              Configure Cloudinary for optimized image hosting with automatic compression, format conversion, and CDN delivery. Leave empty to use local storage.
+            </p>
+
+            <div className="space-y-6">
+              {/* Cloudinary Status */}
+              <div className="flex items-center justify-between p-4 rounded-lg border" style={{ 
+                borderColor: settings.cloudinaryCloudName ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+                backgroundColor: settings.cloudinaryCloudName ? 'hsl(var(--primary) / 0.05)' : 'transparent'
+              }}>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1 flex items-center gap-2">
+                    {settings.cloudinaryCloudName ? (
+                      <>
+                        <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        Cloudinary Active
+                      </>
+                    ) : (
+                      <>
+                        <span className="inline-block w-2 h-2 rounded-full bg-gray-400"></span>
+                        Using Local Storage
+                      </>
+                    )}
+                  </h3>
+                  <p className="text-sm" style={{ color: 'hsl(var(--foreground) / 0.7)' }}>
+                    {settings.cloudinaryCloudName 
+                      ? 'Images are hosted on Cloudinary with automatic optimization'
+                      : 'Images stored locally (not recommended for production)'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Get Cloudinary Account */}
+              <div className="p-4 rounded-lg border-l-4 border-blue-500" style={{ backgroundColor: 'hsl(var(--blue) / 0.1)' }}>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="text-sm">
+                    <p className="font-semibold text-blue-900 mb-2">Get Free Cloudinary Account</p>
+                    <p className="text-blue-800 mb-3">
+                      Sign up at{' '}
+                      <a 
+                        href="https://cloudinary.com/users/register/free"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline font-semibold hover:text-blue-600"
+                      >
+                        cloudinary.com/users/register/free
+                      </a>
+                      {' '}then find your credentials in the dashboard.
+                    </p>
+                    <ul className="text-blue-800 space-y-1 list-disc list-inside">
+                      <li>Free tier: 25GB storage, 25GB bandwidth/month</li>
+                      <li>Automatic image optimization & format conversion</li>
+                      <li>Global CDN for fast delivery</li>
+                      <li>Responsive image transformations</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cloudinary Credentials */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Cloud Name</label>
+                  <p className="text-sm mb-3" style={{ color: 'hsl(var(--foreground) / 0.7)' }}>
+                    Find this in your{' '}
+                    <a 
+                      href="https://console.cloudinary.com/console"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Cloudinary Dashboard
+                    </a>
+                    {' '}under "Product Environment Credentials"
+                  </p>
+                  <Input
+                    placeholder="your-cloud-name"
+                    value={settings.cloudinaryCloudName || ''}
+                    onChange={(e) => updateSetting('cloudinaryCloudName', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">API Key</label>
+                  <Input
+                    placeholder="123456789012345"
+                    value={settings.cloudinaryApiKey || ''}
+                    onChange={(e) => updateSetting('cloudinaryApiKey', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">API Secret</label>
+                  <Input
+                    type="password"
+                    placeholder="abcdefghijklmnopqrstuvwx"
+                    value={settings.cloudinaryApiSecret || ''}
+                    onChange={(e) => updateSetting('cloudinaryApiSecret', e.target.value)}
+                  />
+                </div>
+
+                {settings.cloudinaryCloudName && settings.cloudinaryApiKey && settings.cloudinaryApiSecret && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      toast({ 
+                        title: 'Testing...', 
+                        description: 'Validating Cloudinary credentials...' 
+                      });
+                      
+                      try {
+                        const formData = new FormData();
+                        const testBlob = await fetch('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==').then(r => r.blob());
+                        formData.append('file', testBlob, 'test.png');
+                        formData.append('folder', 'test');
+                        
+                        const response = await fetch('/api/upload', {
+                          method: 'POST',
+                          body: formData,
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success && data.data.url.includes('cloudinary')) {
+                          toast({ 
+                            title: 'Success ✅', 
+                            description: 'Cloudinary is configured correctly!' 
+                          });
+                        } else {
+                          toast({ 
+                            title: 'Invalid Credentials ❌', 
+                            description: 'Please check your Cloudinary credentials', 
+                            variant: 'destructive' 
+                          });
+                        }
+                      } catch (error) {
+                        toast({ 
+                          title: 'Test Failed ❌', 
+                          description: 'Could not connect to Cloudinary', 
+                          variant: 'destructive' 
+                        });
+                      }
+                    }}
+                  >
+                    Test Connection
+                  </Button>
+                )}
+              </div>
+
+              {/* Optimization Settings */}
+              {settings.cloudinaryCloudName && (
+                <div className="border-t pt-6" style={{ borderColor: 'hsl(var(--border))' }}>
+                  <h3 className="font-semibold mb-4">Optimization Settings</h3>
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={settings.cloudinaryAutoOptimize !== false}
+                        onChange={(e) => updateSetting('cloudinaryAutoOptimize', e.target.checked)}
+                        className="h-4 w-4 rounded border-neutral-300"
+                      />
+                      <div>
+                        <span className="text-sm font-medium">Auto Quality Optimization</span>
+                        <p className="text-xs" style={{ color: 'hsl(var(--foreground) / 0.6)' }}>
+                          Automatically optimize image quality for best size/quality ratio
+                        </p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={settings.cloudinaryAutoFormat !== false}
+                        onChange={(e) => updateSetting('cloudinaryAutoFormat', e.target.checked)}
+                        className="h-4 w-4 rounded border-neutral-300"
+                      />
+                      <div>
+                        <span className="text-sm font-medium">Auto Format Conversion</span>
+                        <p className="text-xs" style={{ color: 'hsl(var(--foreground) / 0.6)' }}>
+                          Convert to WebP/AVIF automatically for modern browsers
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </TabsContent>

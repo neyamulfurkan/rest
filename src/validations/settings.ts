@@ -130,4 +130,9 @@ export const settingsSchema = z.object({
   googleAnalyticsId: z.string().optional(),
   groqApiKey: z.string().optional().nullable(),
   enableAiFeatures: z.boolean().optional(),
+  cloudinaryCloudName: z.string().optional().nullable(),
+  cloudinaryApiKey: z.string().optional().nullable(),
+  cloudinaryApiSecret: z.string().optional().nullable(),
+  cloudinaryAutoOptimize: z.boolean().optional(),
+  cloudinaryAutoFormat: z.boolean().optional(),
 }).passthrough();
