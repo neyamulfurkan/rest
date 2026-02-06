@@ -65,10 +65,10 @@ export function GallerySection({ images, categories = ['All'] }: GallerySectionP
     <>
       {/* Homepage Section - Featured Gallery */}
       <section
-        className="py-24"
+        className="py-12 md:py-24 overflow-hidden"
         style={{ backgroundColor: 'hsl(var(--page-bg))' }}
       >
-        <div className="container mx-auto px-4 max-w-7xl">
+        <div className="container mx-auto px-2 sm:px-4 max-w-7xl">
           {/* Section Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}

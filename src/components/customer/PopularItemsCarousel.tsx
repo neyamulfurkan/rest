@@ -133,8 +133,8 @@ export default function PopularItemsCarousel({
   }
 
   return (
-    <section className="py-12" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
-      <div className="container mx-auto px-4 max-w-7xl">
+    <section className="py-8 md:py-12 overflow-hidden" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
+      <div className="container mx-auto px-2 sm:px-4 max-w-7xl">
         {/* Title */}
         <h2 className="text-5xl font-bold text-center mb-8" style={{ color: 'hsl(var(--foreground))' }}>
           Customer Favorites

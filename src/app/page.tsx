@@ -56,7 +56,7 @@ export default function HomePage() {
       <Header onCartOpen={() => setIsCartOpen(true)} />
 
       {/* Hero Section */}
-      <section className="relative min-h-[100svh] h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* Background Media */}
         <HeroMedia />
 
@@ -171,7 +171,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
+      <section className="py-12 md:py-24" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Feature Card 1: QR Ordering */}

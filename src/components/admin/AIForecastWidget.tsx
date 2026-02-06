@@ -371,46 +371,46 @@ export default function AIForecastWidget({ restaurantId }: AIForecastWidgetProps
       
       <CardContent>
         {/* Forecast Summary */}
-        <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-neutral-50 rounded-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 md:mb-6 p-3 sm:p-4 bg-neutral-50 rounded-lg">
           <div>
             <p className="text-xs text-neutral-500 mb-1">Predicted Orders</p>
-            <p className="text-xl font-bold text-neutral-900">
+            <p className="text-lg sm:text-xl font-bold text-neutral-900">
               {forecast.predictedOrders}
             </p>
           </div>
           <div>
             <p className="text-xs text-neutral-500 mb-1">Predicted Revenue</p>
-            <p className="text-xl font-bold text-neutral-900">
+            <p className="text-lg sm:text-xl font-bold text-neutral-900 break-all">
               {formatCurrency(forecast.predictedRevenue)}
             </p>
           </div>
           <div>
             <p className="text-xs text-neutral-500 mb-1">Peak Hours</p>
-            <p className="text-xl font-bold text-neutral-900">
+            <p className="text-lg sm:text-xl font-bold text-neutral-900 whitespace-nowrap">
               {forecast.peakHourStart} - {forecast.peakHourEnd}
             </p>
           </div>
         </div>
 
         {/* Forecast Chart */}
-        <div className="mb-6">
-          <ResponsiveContainer width="100%" height={250}>
+        <div className="mb-4 md:mb-6 -mx-2 sm:mx-0">
+          <ResponsiveContainer width="100%" height={200}>
             <LineChart
               data={chartData}
-              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+              margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
               <XAxis
                 dataKey="date"
-                tick={{ fill: '#737373', fontSize: 11 }}
+                tick={{ fill: '#737373', fontSize: 9 }}
                 tickLine={{ stroke: '#e5e5e5' }}
                 axisLine={{ stroke: '#e5e5e5' }}
               />
               <YAxis
-                tick={{ fill: '#737373', fontSize: 11 }}
+                tick={{ fill: '#737373', fontSize: 9 }}
                 tickLine={{ stroke: '#e5e5e5' }}
                 axisLine={{ stroke: '#e5e5e5' }}
-                tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
+                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
               />
               <Tooltip content={<ForecastTooltip />} />
               

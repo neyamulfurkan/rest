@@ -65,14 +65,14 @@ export default function KPICard({
 
   return (
     <Card className="rounded-2xl shadow-md" style={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Title */}
-        <h3 className="text-sm font-medium mb-4 text-muted-foreground">{title}</h3>
+        <h3 className="text-xs sm:text-sm font-medium mb-3 md:mb-4 text-muted-foreground">{title}</h3>
 
         {/* Value and Change */}
-        <div className="flex items-end justify-between mb-4">
+        <div className="flex items-end justify-between mb-3 md:mb-4">
           <div>
-            <p className="text-4xl font-bold mb-1 text-foreground">
+            <p className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 text-foreground">
               {isCurrency ? formatCurrency(displayValue) : displayValue.toLocaleString()}
             </p>
             
@@ -118,7 +118,7 @@ export default function KPICard({
                 {isPositiveChange ? '+' : ''}
                 {change.toFixed(1)}%
               </span>
-              <span className="text-xs ml-1 text-muted-foreground">vs yesterday</span>
+              <span className="text-[10px] sm:text-xs ml-1 text-muted-foreground hidden sm:inline">vs yesterday</span>
             </div>
           </div>
         </div>

@@ -144,7 +144,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={`${inter.className} overflow-x-hidden`} suppressHydrationWarning>
         <Providers>
           <I18nProvider>
             <SettingsLoader />

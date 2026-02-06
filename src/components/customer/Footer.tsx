@@ -2,12 +2,12 @@
 
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react';
 import { useSettingsStore } from '@/store/settingsStore';
 
 export default function Footer() {
+  const [mounted, setMounted] = useState(false);
   const { 
     restaurantName, 
     email, 
@@ -16,7 +16,27 @@ export default function Footer() {
     branding 
   } = useSettingsStore();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const currentYear = new Date().getFullYear();
+
+  // Don't render anything until client-side mounted
+  if (!mounted) {
+    return (
+      <footer className="bg-neutral-900 text-neutral-100">
+        <div className="container mx-auto px-4 py-12 max-w-7xl">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="h-24" />
+            <div className="h-24" />
+            <div className="h-24" />
+            <div className="h-24" />
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer 
@@ -53,40 +73,40 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link 
-                  href="/menu" 
-                  className="hover:opacity-80 transition-opacity"
+                <span
+                  className="hover:opacity-80 transition-opacity cursor-pointer"
                   style={{ color: branding.footerTextColor }}
+                  onClick={() => window.location.href = '/menu'}
                 >
                   Menu
-                </Link>
+                </span>
               </li>
               <li>
-                <Link 
-                  href="/booking" 
-                  className="hover:opacity-80 transition-opacity"
+                <span
+                  className="hover:opacity-80 transition-opacity cursor-pointer"
                   style={{ color: branding.footerTextColor }}
+                  onClick={() => window.location.href = '/booking'}
                 >
                   Bookings
-                </Link>
+                </span>
               </li>
               <li>
-                <Link 
-                  href="/contact" 
-                  className="hover:opacity-80 transition-opacity"
+                <span
+                  className="hover:opacity-80 transition-opacity cursor-pointer"
                   style={{ color: branding.footerTextColor }}
+                  onClick={() => window.location.href = '/contact'}
                 >
                   Contact
-                </Link>
+                </span>
               </li>
               <li>
-                <Link 
-                  href="/account/orders" 
-                  className="hover:opacity-80 transition-opacity"
+                <span
+                  className="hover:opacity-80 transition-opacity cursor-pointer"
                   style={{ color: branding.footerTextColor }}
+                  onClick={() => window.location.href = '/account/orders'}
                 >
                   Track Order
-                </Link>
+                </span>
               </li>
             </ul>
           </div>
@@ -103,25 +123,25 @@ export default function Footer() {
               {phone && (
                 <li className="flex items-start gap-2">
                   <Phone className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <a 
-                    href={`tel:${phone}`}
-                    className="hover:opacity-80 transition-opacity"
+                  <span
+                    className="hover:opacity-80 transition-opacity cursor-pointer"
                     style={{ color: branding.footerTextColor }}
+                    onClick={() => window.location.href = `tel:${phone}`}
                   >
                     {phone}
-                  </a>
+                  </span>
                 </li>
               )}
               {email && (
                 <li className="flex items-start gap-2">
                   <Mail className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <a 
-                    href={`mailto:${email}`}
-                    className="hover:opacity-80 transition-opacity"
+                  <span
+                    className="hover:opacity-80 transition-opacity cursor-pointer"
                     style={{ color: branding.footerTextColor }}
+                    onClick={() => window.location.href = `mailto:${email}`}
                   >
                     {email}
-                  </a>
+                  </span>
                 </li>
               )}
               {address && (
@@ -145,26 +165,22 @@ export default function Footer() {
             </h3>
             <div className="flex gap-4">
               {useSettingsStore.getState().facebookUrl && (
-                <a 
-                  href={useSettingsStore.getState().facebookUrl || '#'} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="hover:opacity-80 transition-opacity"
+                <span
+                  className="hover:opacity-80 transition-opacity cursor-pointer"
                   aria-label="Facebook"
+                  onClick={() => window.open(useSettingsStore.getState().facebookUrl || '#', '_blank', 'noopener,noreferrer')}
                 >
                   <Facebook className="w-6 h-6" style={{ color: branding.footerTextColor }} />
-                </a>
+                </span>
               )}
               {useSettingsStore.getState().instagramUrl && (
-                <a 
-                  href={useSettingsStore.getState().instagramUrl || '#'} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="hover:opacity-80 transition-opacity"
+                <span
+                  className="hover:opacity-80 transition-opacity cursor-pointer"
                   aria-label="Instagram"
+                  onClick={() => window.open(useSettingsStore.getState().instagramUrl || '#', '_blank', 'noopener,noreferrer')}
                 >
-                <Instagram className="w-6 h-6" style={{ color: branding.footerTextColor }} />
-                </a>
+                  <Instagram className="w-6 h-6" style={{ color: branding.footerTextColor }} />
+                </span>
               )}
             </div>
           </div>

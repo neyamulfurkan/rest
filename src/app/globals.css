@@ -97,11 +97,17 @@
   * {
     @apply border-border;
   }
+  html {
+    overflow-x: hidden;
+  }
   body {
     background-color: rgb(var(--page-bg));
     color: rgb(var(--text-primary));
     font-family: var(--font-body);
     font-feature-settings: 'rlig' 1, 'calt' 1;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
   
   /* Calendar specific styling */

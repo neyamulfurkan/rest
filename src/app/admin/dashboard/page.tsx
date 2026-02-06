@@ -274,7 +274,7 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Page Title */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Dashboard</h1>
@@ -284,7 +284,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Row 1: KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <KPICard
           title="Total Sales Today"
           value={stats.totalSalesToday}
@@ -338,13 +338,13 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Row 2: Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         <SalesChart data={salesData} />
         <OrdersPieChart data={orderTypeCounts} />
       </div>
 
       {/* Row 3: Recent Activity Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Recent Orders */}
         <Card className="rounded-2xl shadow-md bg-card border-border">
           <div className="p-6 border-b border-border">
