@@ -1,6 +1,7 @@
 // src/app/api/orders/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
+// import { getServerSession } from '@/lib/session';
 import { z } from 'zod';
 import { createOrder, getOrders } from '@/services/orderService';
 import { orderSchema, orderQuerySchema } from '@/validations/order';
@@ -13,7 +14,10 @@ import type { CreateOrderRequest, OrderFilters, PaginatedResponse, OrderWithRela
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get restaurantId from query params - session is causing issues
+    // Skip auth check for now - will add proper auth later
+    // const session = null; // await getServerSession();
+    
+    // Get restaurantId from query params (required for unauthenticated requests)
     const { searchParams } = new URL(request.url);
     const restaurantId = searchParams.get('restaurantId');
     
