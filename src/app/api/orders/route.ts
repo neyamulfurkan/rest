@@ -1,7 +1,6 @@
 // src/app/api/orders/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/session';
 import { z } from 'zod';
 import { createOrder, getOrders } from '@/services/orderService';
 import { orderSchema, orderQuerySchema } from '@/validations/order';
@@ -14,12 +13,9 @@ import type { CreateOrderRequest, OrderFilters, PaginatedResponse, OrderWithRela
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get session to extract restaurant ID
-    const session = await getServerSession();
-    
-    // Get restaurantId from query params or session
+    // Get restaurantId from query params - session is causing issues
     const { searchParams } = new URL(request.url);
-    const restaurantId = searchParams.get('restaurantId') || session?.user?.restaurantId;
+    const restaurantId = searchParams.get('restaurantId');
     
     if (!restaurantId) {
       return NextResponse.json(
