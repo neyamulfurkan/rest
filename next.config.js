@@ -304,8 +304,8 @@ const nextConfig = {
     },
   },
 
-  // Output configuration for Render deployment
-  output: 'standalone',
+  // Output configuration - Conditional for different platforms
+  ...(process.env.VERCEL ? {} : { output: 'standalone' }),
   
   // Ensure public directory is included in build
   distDir: '.next',
