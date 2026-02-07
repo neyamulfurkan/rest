@@ -145,7 +145,7 @@ export default function CheckoutPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           <CheckoutForm />
           
-          <CheckoutFormContent />
+          <OrderSummary items={items} subtotal={subtotal} />
         </div>
       </div>
     </div>
@@ -251,7 +251,12 @@ function CheckoutForm() {
             return;
           }
           
-          const stripe = (window as any).Stripe(publishableKey);
+          // CRITICAL FIX: Store stripe instance globally to reuse
+          if (!(window as any).__STRIPE_INSTANCE__) {
+            (window as any).__STRIPE_INSTANCE__ = (window as any).Stripe(publishableKey);
+          }
+          
+          const stripe = (window as any).__STRIPE_INSTANCE__;
           const elements = stripe.elements();
           const cardElement = elements.create('card', {
             style: {
@@ -528,15 +533,13 @@ const onSubmit = async (data: CheckoutFormData) => {
         }
 
         // Step 3: Confirm card payment (PRODUCTION MODE)
-        const settingsRes = await fetch('/api/settings');
-        const settingsData = await settingsRes.json();
-        const publishableKey = settingsData.data?.stripePublishableKey;
+        // CRITICAL FIX: Reuse the SAME Stripe instance we used to create the card element
+        const stripe = (window as any).__STRIPE_INSTANCE__;
         
-        if (!publishableKey || publishableKey.trim() === '' || publishableKey === 'pk_test_dummy') {
-          throw new Error('Stripe is not configured. Please add Stripe keys in Admin Settings > Payment.');
+        if (!stripe) {
+          throw new Error('Stripe not initialized. Please refresh the page and try again.');
         }
         
-        const stripe = (window as any).Stripe(publishableKey);
         const { error: confirmError } = await stripe.confirmCardPayment(
           paymentData.data.clientSecret,
           {
