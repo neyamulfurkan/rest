@@ -102,6 +102,13 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, isEmpty } = useCart();
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Shared state between form and summary
+  const [tipPercentage, setTipPercentage] = useState(15);
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [orderType, setOrderType] = useState<string>(ORDER_TYPE.DELIVERY);
+  const [taxAmount, setTaxAmount] = useState(0);
+  const [serviceFee, setServiceFee] = useState(0);
 
   // Client-side only mounting
   useEffect(() => {
@@ -143,20 +150,62 @@ export default function CheckoutPage() {
         <h1 className="text-3xl font-bold text-neutral-900 mb-8">Checkout</h1>
         
         <div className="grid lg:grid-cols-2 gap-8">
-          <CheckoutForm />
+          <CheckoutForm 
+            tipPercentage={tipPercentage}
+            setTipPercentage={setTipPercentage}
+            deliveryFee={deliveryFee}
+            setDeliveryFee={setDeliveryFee}
+            orderType={orderType}
+            setOrderType={setOrderType}
+            taxAmount={taxAmount}
+            setTaxAmount={setTaxAmount}
+            serviceFee={serviceFee}
+            setServiceFee={setServiceFee}
+          />
           
-          <OrderSummary items={items} subtotal={subtotal} />
+          <OrderSummary 
+            items={items} 
+            subtotal={subtotal}
+            tipPercentage={tipPercentage}
+            deliveryFee={deliveryFee}
+            taxAmount={taxAmount}
+            serviceFee={serviceFee}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function CheckoutForm() {
+interface CheckoutFormProps {
+  tipPercentage: number;
+  setTipPercentage: (value: number) => void;
+  deliveryFee: number;
+  setDeliveryFee: (value: number) => void;
+  orderType: string;
+  setOrderType: (value: string) => void;
+  taxAmount: number;
+  setTaxAmount: (value: number) => void;
+  serviceFee: number;
+  setServiceFee: (value: number) => void;
+}
+
+function CheckoutForm({
+  tipPercentage,
+  setTipPercentage,
+  deliveryFee,
+  setDeliveryFee,
+  orderType: propsOrderType,
+  setOrderType: propsSetOrderType,
+  taxAmount,
+  setTaxAmount,
+  serviceFee,
+  setServiceFee,
+}: CheckoutFormProps) {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
   const { data: session } = useSession();
-  const { restaurantId } = useSettingsStore();
+  const { restaurantId, taxRate, serviceFee: settingsServiceFee } = useSettingsStore();
   const [isMounted, setIsMounted] = useState(false);
 
   // Client-side only mounting
@@ -172,7 +221,6 @@ function CheckoutForm() {
     }
   }, [restaurantId, router, isMounted]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deliveryFee, setDeliveryFee] = useState(0);
   const [estimatedDeliveryTime, setEstimatedDeliveryTime] = useState('');
   const [isAddressValid, setIsAddressValid] = useState(false);
   const [stripeCardElement, setStripeCardElement] = useState<any>(null);
@@ -196,9 +244,19 @@ function CheckoutForm() {
   });
 
   const orderType = watch('orderType');
-  const tipPercentage = watch('tipPercentage');
+  const watchedTipPercentage = watch('tipPercentage');
   const paymentMethod = watch('paymentMethod');
   const deliveryZipCode = watch('deliveryZipCode');
+  
+  // Sync form orderType with parent state
+  useEffect(() => {
+    propsSetOrderType(orderType);
+  }, [orderType, propsSetOrderType]);
+  
+  // Sync form tipPercentage with parent state
+  useEffect(() => {
+    setTipPercentage(watchedTipPercentage);
+  }, [watchedTipPercentage, setTipPercentage]);
 
   // Clear fields when order type changes
   useEffect(() => {
@@ -223,11 +281,16 @@ function CheckoutForm() {
     }
   }, [orderType, setValue]);
 
-  // Calculate pricing (use store's tax rate, no fallback)
-  const { taxRate } = useSettingsStore();
-  const taxAmount = subtotal * (taxRate || 0);
+  // Calculate pricing and sync with parent state
+  useEffect(() => {
+    const calculatedTax = subtotal * (taxRate || 0);
+    const calculatedServiceFee = subtotal * (settingsServiceFee || 0);
+    setTaxAmount(calculatedTax);
+    setServiceFee(calculatedServiceFee);
+  }, [subtotal, taxRate, settingsServiceFee, setTaxAmount, setServiceFee]);
+  
   const tipAmount = tipPercentage >= 0 ? (subtotal * tipPercentage) / 100 : 0;
-  const totalAmount = subtotal + taxAmount + deliveryFee + tipAmount;
+  const totalAmount = subtotal + taxAmount + serviceFee + deliveryFee + tipAmount;
 
   // Check delivery zone when zip code changes
   useEffect(() => {
@@ -383,7 +446,7 @@ const onSubmit = async (data: CheckoutFormData) => {
         })),
         subtotal,
         taxAmount,
-        serviceFee: 0,
+        serviceFee,
         tipAmount,
         discountAmount: 0,
         totalAmount,
@@ -855,7 +918,7 @@ const onSubmit = async (data: CheckoutFormData) => {
               onClick={() => setValue('tipPercentage', value)}
               className={cn(
                 'p-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium',
-                tipPercentage === value
+                watchedTipPercentage === value
                   ? 'border-primary-500 bg-primary-50 text-primary-600'
                   : 'border-neutral-200 hover:border-neutral-300 text-neutral-700'
               )}
@@ -865,7 +928,7 @@ const onSubmit = async (data: CheckoutFormData) => {
           ))}
         </div>
 
-        {tipPercentage === -1 && (
+        {watchedTipPercentage === -1 && (
           <div className="mt-4">
             <Input
               type="number"
@@ -928,16 +991,17 @@ interface OrderSummaryProps {
     customizations?: Array<{ optionName: string }>;
   }>;
   subtotal: number;
+  tipPercentage: number;
+  deliveryFee: number;
+  taxAmount: number;
+  serviceFee: number;
 }
 
-function OrderSummary({ items, subtotal }: OrderSummaryProps) {
+function OrderSummary({ items, subtotal, tipPercentage, deliveryFee, taxAmount, serviceFee }: OrderSummaryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { taxRate } = useSettingsStore();
 
-  const taxAmount = subtotal * (taxRate || 0);
-  const deliveryFee = 0; // Will be calculated based on actual delivery address
-  const tipAmount = (subtotal * 15) / 100; // Default 15% tip
-  const totalAmount = subtotal + taxAmount + deliveryFee + tipAmount;
+  const tipAmount = tipPercentage >= 0 ? (subtotal * tipPercentage) / 100 : 0;
+  const totalAmount = subtotal + taxAmount + serviceFee + deliveryFee + tipAmount;
 
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto">
@@ -999,12 +1063,20 @@ function OrderSummary({ items, subtotal }: OrderSummaryProps) {
           <span>Tax</span>
           <span>${taxAmount.toFixed(2)}</span>
         </div>
+        {serviceFee > 0 && (
+          <div className="flex justify-between text-neutral-700">
+            <span>Service Fee</span>
+            <span>${serviceFee.toFixed(2)}</span>
+          </div>
+        )}
+        {deliveryFee > 0 && (
+          <div className="flex justify-between text-neutral-700">
+            <span>Delivery Fee</span>
+            <span>${deliveryFee.toFixed(2)}</span>
+          </div>
+        )}
         <div className="flex justify-between text-neutral-700">
-          <span>Delivery Fee</span>
-          <span>${deliveryFee.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-neutral-700">
-          <span>Tip (15%)</span>
+          <span>Tip ({tipPercentage}%)</span>
           <span>${tipAmount.toFixed(2)}</span>
         </div>
       </div>
