@@ -423,7 +423,7 @@ const onSubmit = async (data: CheckoutFormData) => {
         throw new Error('Please log in to place an order');
       }
 
-      // Check for existing pending order (prevent duplicates)
+      // Check for duplicate order in last 2 minutes (spam protection only)
       const checkExistingResponse = await fetch(
         `/api/orders?restaurantId=${restaurantId}&customerId=${session.user.id}&status=PENDING&limit=1`
       );
@@ -433,9 +433,15 @@ const onSubmit = async (data: CheckoutFormData) => {
         const existingOrder = existingData.data[0];
         const orderAge = Date.now() - new Date(existingOrder.createdAt).getTime();
         
-        // If pending order exists from last 5 minutes, prevent duplicate
-        if (orderAge < 5 * 60 * 1000) {
-          throw new Error('You have a pending order. Please complete or cancel it first.');
+        // Only prevent if exact duplicate within 2 minutes (spam protection)
+        if (orderAge < 2 * 60 * 1000) {
+          // Check if it's actually a duplicate (same items)
+          const currentCartItemIds = items.map(i => i.menuItemId).sort().join(',');
+          const existingItemIds = existingOrder.orderItems?.map((i: any) => i.menuItemId).sort().join(',');
+          
+          if (currentCartItemIds === existingItemIds) {
+            throw new Error('You just placed this exact order. Please wait 2 minutes before ordering again.');
+          }
         }
       }
       
