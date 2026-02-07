@@ -145,10 +145,7 @@ export default function CheckoutPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           <CheckoutForm />
           
-          <OrderSummary 
-            items={items}
-            subtotal={subtotal}
-          />
+          <CheckoutFormContent />
         </div>
       </div>
     </div>
@@ -929,11 +926,11 @@ function OrderSummary({ items, subtotal }: OrderSummaryProps) {
 
   const taxAmount = subtotal * (taxRate || 0);
   const deliveryFee = 0; // Will be calculated based on actual delivery address
-  const tipAmount = 0; // Will be added on checkout page
+  const tipAmount = (subtotal * 15) / 100; // Default 15% tip
   const totalAmount = subtotal + taxAmount + deliveryFee + tipAmount;
 
   return (
-    <div className="bg-white rounded-2xl shadow-md p-6 lg:sticky lg:top-24 h-fit">
+    <div className="bg-white rounded-2xl shadow-md p-6 lg:sticky lg:top-8 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto">
       <h2 className="text-xl font-semibold text-neutral-900 mb-4">Order Summary</h2>
 
       {/* Items List */}
