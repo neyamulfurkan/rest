@@ -84,7 +84,7 @@ export function PageTransition({ children }: PageTransitionProps) {
           duration: 0.2,
           ease: [0.4, 0, 0.2, 1],
         }}
-        className="min-h-screen absolute inset-0"
+        className="min-h-screen relative"
       >
         {children}
       </motion.div>
