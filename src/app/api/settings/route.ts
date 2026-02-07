@@ -89,18 +89,31 @@ export async function GET(_request: NextRequest) {
     // Convert settings array to object
     const settingsObject = additionalSettings.reduce((acc, setting) => {
       try {
-        acc[setting.key] = JSON.parse(setting.value);
+        // Parse JSON values
+        const parsedValue = JSON.parse(setting.value);
+        acc[setting.key] = parsedValue;
       } catch {
+        // If not JSON, use raw value
         acc[setting.key] = setting.value;
       }
       return acc;
-    }, {} as Record<string, unknown>);
+    }, {} as Record<string, any>);
+
+    // Add payment gateway settings (explicitly extract from settingsObject)
+    const paymentSettings = {
+      stripePublishableKey: settingsObject.stripePublishableKey || null,
+      stripeSecretKey: settingsObject.stripeSecretKey || null,
+      stripeWebhookSecret: settingsObject.stripeWebhookSecret || null,
+      paypalClientId: settingsObject.paypalClientId || null,
+      paypalClientSecret: settingsObject.paypalClientSecret || null,
+    };
 
     // Merge restaurant data with custom settings
     // IMPORTANT: Hero fields come from Restaurant table ONLY
     const allSettings = {
       ...restaurant,
       restaurantName: restaurant.name,
+      ...paymentSettings,
       // Custom settings (NOT in Restaurant table)
       floorPlanImageUrl: settingsObject.floorPlanImageUrl || null,
       headerBgColor: settingsObject.headerBgColor || '#ffffff',
@@ -340,7 +353,12 @@ export async function POST(request: NextRequest) {
       'instagramUrl',
       'kitchenPrinterIp',
       'googleMapsApiKey',
-      'googleAnalyticsId'
+      'googleAnalyticsId',
+      'stripePublishableKey',
+      'stripeSecretKey',
+      'stripeWebhookSecret',
+      'paypalClientId',
+      'paypalClientSecret'
     ];
     
     for (const key of customSettingsKeys) {

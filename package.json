@@ -14,6 +14,7 @@
     "deploy:render": "npm run build && npm run start",
     "lint": "next lint",
     "test:pages": "node scripts/test-pages.js",
+    "cleanup:orders": "node scripts/cleanup-pending-orders.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",

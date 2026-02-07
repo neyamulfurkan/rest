@@ -50,12 +50,43 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = createOrderSchema.parse(body);
 
-    // Check for PayPal credentials from settings
-    const settingsResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/settings`);
-    const settingsData = await settingsResponse.json();
+    // Check for PayPal credentials from database
+    const { prisma } = await import('@/lib/prisma');
     
-    const clientId = settingsData.data?.paypalClientId;
-    const clientSecret = settingsData.data?.paypalClientSecret;
+    const restaurant = await prisma.restaurant.findFirst({
+      select: { id: true }
+    });
+
+    let clientId: string | null = null;
+    let clientSecret: string | null = null;
+
+    if (restaurant) {
+      const [clientIdSetting, clientSecretSetting] = await Promise.all([
+        prisma.setting.findUnique({
+          where: {
+            restaurantId_key: {
+              restaurantId: restaurant.id,
+              key: 'paypalClientId'
+            }
+          }
+        }),
+        prisma.setting.findUnique({
+          where: {
+            restaurantId_key: {
+              restaurantId: restaurant.id,
+              key: 'paypalClientSecret'
+            }
+          }
+        })
+      ]);
+
+      if (clientIdSetting?.value) {
+        clientId = JSON.parse(clientIdSetting.value);
+      }
+      if (clientSecretSetting?.value) {
+        clientSecret = JSON.parse(clientSecretSetting.value);
+      }
+    }
 
     // DEVELOPMENT MODE: Skip PayPal if not configured
     if (!clientId || !clientSecret) {
@@ -133,7 +164,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         data: {
-          orderId: paypalOrder.data.id,
+          id: paypalOrder.data.id,
           status: paypalOrder.data.status,
           approveUrl: paypalOrder.data.links.find((link) => link.rel === 'approve')?.href,
         },

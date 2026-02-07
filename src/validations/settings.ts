@@ -116,6 +116,7 @@ export const settingsSchema = z.object({
   stripeSecretKey: z.string().optional(),
   paypalClientId: z.string().optional(),
   paypalClientSecret: z.string().optional(),
+  stripeWebhookSecret: z.string().optional(),
   squareAccessToken: z.string().optional(),
   cashOnDeliveryEnabled: z.boolean().optional(),
   twilioAccountSid: z.string().optional(),

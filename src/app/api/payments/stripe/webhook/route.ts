@@ -3,11 +3,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
-import { stripe } from '@/lib/stripe';
+import { getStripeInstance, getStripeWebhookSecret } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 
 import { ORDER_STATUS } from '@/lib/constants';
-import { PaymentStatus } from '@/types';
+import { PaymentStatus } from '@prisma/client';
 
 /**
  * Stripe webhook endpoint
@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecret = await getStripeWebhookSecret();
     if (!webhookSecret) {
-      console.error('STRIPE_WEBHOOK_SECRET not configured');
+      console.error('STRIPE_WEBHOOK_SECRET not configured in database or environment');
       // Return 200 to prevent Stripe from retrying
       return NextResponse.json({ received: true });
     }
@@ -38,7 +38,12 @@ export async function POST(request: NextRequest) {
     // Verify webhook signature
     let event: Stripe.Event;
     try {
-      const stripeClient = stripe;
+      const stripeClient = await getStripeInstance();
+      if (!stripeClient) {
+        console.error('Stripe client not available');
+        return NextResponse.json({ received: true });
+      }
+      
       event = stripeClient.webhooks.constructEvent(
         body,
         signature,
@@ -188,6 +193,23 @@ async function handlePaymentFailed(
           createdBy: 'SYSTEM',
         },
       });
+
+      // Restore inventory for failed payments
+      const orderItems = await tx.orderItem.findMany({
+        where: { orderId },
+        include: { menuItem: true },
+      });
+
+      for (const item of orderItems) {
+        if (item.menuItem.trackInventory && item.menuItem.stockQuantity !== null) {
+          await tx.menuItem.update({
+            where: { id: item.menuItemId },
+            data: {
+              stockQuantity: { increment: item.quantity },
+            },
+          });
+        }
+      }
     });
 
     console.log(`Payment failed for order ${orderId}: ${failureMessage}`);
@@ -238,7 +260,7 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
     // Find order by payment intent ID
     const order = await prisma.order.findFirst({
       where: { paymentIntentId: charge.payment_intent as string },
-      select: { id: true },
+      select: { id: true, customerId: true, totalAmount: true },
     });
 
     if (!order) {
@@ -262,6 +284,31 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
           status: ORDER_STATUS.CANCELLED,
           note: `Refund processed: ${charge.amount_refunded / 100} ${charge.currency.toUpperCase()}`,
           createdBy: 'SYSTEM',
+        },
+      });
+
+      // Restore inventory for refunded items
+      const orderItems = await tx.orderItem.findMany({
+        where: { orderId: order.id },
+        include: { menuItem: true },
+      });
+
+      for (const item of orderItems) {
+        if (item.menuItem.trackInventory && item.menuItem.stockQuantity !== null) {
+          await tx.menuItem.update({
+            where: { id: item.menuItemId },
+            data: {
+              stockQuantity: { increment: item.quantity },
+            },
+          });
+        }
+      }
+
+      // Update customer stats (only decrement totalSpent, NOT totalOrders)
+      await tx.customer.update({
+        where: { id: order.customerId },
+        data: {
+          totalSpent: { decrement: order.totalAmount },
         },
       });
     });

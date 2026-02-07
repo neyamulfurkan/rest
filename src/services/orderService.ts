@@ -46,7 +46,7 @@ export async function createOrder(data: CreateOrderRequest): Promise<OrderWithRe
     const subtotal = data.items.reduce((sum, item) => {
       const itemTotal = item.price * item.quantity;
       const customizationsTotal = (item.customizations || []).reduce(
-        (customSum, custom) => customSum + custom.price * item.quantity,
+        (customSum, custom: any) => customSum + (custom.price || 0) * item.quantity,
         0
       );
       return sum + itemTotal + customizationsTotal;
@@ -55,13 +55,37 @@ export async function createOrder(data: CreateOrderRequest): Promise<OrderWithRe
     const taxAmount = subtotal * (await getRestaurantTaxRate(data.restaurantId));
     const serviceFee = await getRestaurantServiceFee(data.restaurantId);
     
-    // Calculate delivery fee if delivery order
+    // Create delivery address if delivery order with address object
+    let deliveryAddressId = data.deliveryAddressId;
     let deliveryFee = 0;
-    if (data.type === 'DELIVERY' && data.deliveryAddressId) {
-      deliveryFee = await calculateDeliveryFee(
-        data.restaurantId,
-        data.deliveryAddressId
-      );
+    
+    if (data.type === 'DELIVERY') {
+      // Check if deliveryAddress object is provided (from checkout)
+      const deliveryAddressData = (data as any).deliveryAddress;
+      
+      if (deliveryAddressData && !deliveryAddressId) {
+        // Create new address for this order
+        const newAddress = await prisma.address.create({
+          data: {
+            customerId: data.customerId,
+            street: deliveryAddressData.street,
+            city: deliveryAddressData.city,
+            state: deliveryAddressData.state,
+            zipCode: deliveryAddressData.zipCode,
+            country: deliveryAddressData.country || 'US',
+            isDefault: false,
+          },
+        });
+        deliveryAddressId = newAddress.id;
+      }
+      
+      // Calculate delivery fee
+      if (deliveryAddressId) {
+        deliveryFee = await calculateDeliveryFee(
+          data.restaurantId,
+          deliveryAddressId
+        );
+      }
     }
 
     // Apply promo code discount if provided
@@ -96,7 +120,7 @@ export async function createOrder(data: CreateOrderRequest): Promise<OrderWithRe
           restaurantId: data.restaurantId,
           tableNumber: data.tableNumber,
           pickupTime: data.pickupTime ? new Date(data.pickupTime) : null,
-          deliveryAddressId: data.deliveryAddressId,
+          deliveryAddressId: deliveryAddressId,
           deliveryFee,
           subtotal,
           taxAmount,
@@ -108,10 +132,9 @@ export async function createOrder(data: CreateOrderRequest): Promise<OrderWithRe
           paymentStatus: PaymentStatus.PENDING,
           promoCodeId: data.promoCodeId,
           specialInstructions: data.specialInstructions,
-          // Set estimated delivery time if delivery order
           estimatedDeliveryTime:
             data.type === 'DELIVERY'
-              ? new Date(Date.now() + 45 * 60 * 1000) // 45 minutes from now
+              ? new Date(Date.now() + 45 * 60 * 1000)
               : null,
         },
         include: {

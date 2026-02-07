@@ -27,30 +27,6 @@ export async function POST(request: NextRequest) {
 
     const { amount, currency, orderId, customerId, customerEmail } = validatedData;
 
-    // Check if Stripe is configured in settings
-    const settingsResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/settings`);
-    const settingsData = await settingsResponse.json();
-    
-    // DEVELOPMENT MODE: Skip Stripe if not configured
-    if (!settingsData.data?.stripeSecretKey) {
-      console.log('⚠️ DEVELOPMENT MODE: Stripe not configured, simulating payment intent');
-      
-      // Return mock payment intent for development
-      return NextResponse.json(
-        {
-          success: true,
-          data: {
-            clientSecret: 'dev_mock_client_secret_' + Date.now(),
-            paymentIntentId: 'pi_dev_mock_' + Date.now(),
-            amount: amount,
-            currency: currency || 'usd',
-          },
-          isDevelopmentMode: true,
-        },
-        { status: 201 }
-      );
-    }
-
     // Prepare metadata for payment intent
     const metadata: Record<string, string> = {};
     if (orderId) {
@@ -65,6 +41,26 @@ export async function POST(request: NextRequest) {
 
     // Create payment intent via payment service
     const result = await createPaymentIntent(amount, currency, metadata);
+
+    // DEVELOPMENT MODE: Stripe not configured
+    if (!result.success && result.error === 'Stripe is not configured. Please add your Stripe keys in Settings.') {
+      console.log('⚠️ DEVELOPMENT MODE: Stripe not configured, simulating payment intent');
+      
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            clientSecret: 'dev_mock_client_secret_' + Date.now(),
+            paymentIntentId: 'pi_dev_mock_' + Date.now(),
+            amount: amount,
+            currency: currency || 'usd',
+          },
+          isDevelopmentMode: true,
+          message: 'Add Stripe keys in Admin Settings > Payment to enable real payments',
+        },
+        { status: 201 }
+      );
+    }
 
     // Handle service response
     if (!result.success || !result.data) {

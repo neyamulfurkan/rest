@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
+import { toast } from 'sonner';
 
 export default function PayPalReturnPage() {
   const router = useRouter();
@@ -12,15 +13,29 @@ export default function PayPalReturnPage() {
   const { clearCart } = useCart();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     const capturePayment = async () => {
       const token = searchParams.get('token'); // PayPal order ID
-      const payerID = searchParams.get('PayerID');
       const orderIdParam = searchParams.get('orderId');
+
+      // Check for development mode mock
+      if (token === 'DEV_MOCK' && orderIdParam) {
+        setStatus('success');
+        setOrderId(orderIdParam);
+        clearCart();
+        toast.success('Order placed successfully! (Development Mode)');
+        
+        setTimeout(() => {
+          router.push(`/order-tracking/${orderIdParam}`);
+        }, 2000);
+        return;
+      }
 
       if (!token || !orderIdParam) {
         setStatus('error');
+        setErrorMessage('Missing payment information');
         return;
       }
 
@@ -40,6 +55,7 @@ export default function PayPalReturnPage() {
           setStatus('success');
           setOrderId(orderIdParam);
           clearCart();
+          toast.success('Payment confirmed!');
           
           // Redirect to order tracking after 2 seconds
           setTimeout(() => {
@@ -47,10 +63,12 @@ export default function PayPalReturnPage() {
           }, 2000);
         } else {
           setStatus('error');
+          setErrorMessage(data.error || 'Payment verification failed');
         }
       } catch (error) {
         console.error('PayPal capture error:', error);
         setStatus('error');
+        setErrorMessage('Network error occurred');
       }
     };
 
@@ -81,7 +99,7 @@ export default function PayPalReturnPage() {
           <div className="text-center">
             <XCircle className="w-16 h-16 mx-auto mb-4 text-error-500" />
             <h2 className="text-2xl font-bold text-neutral-900 mb-2">Payment Failed</h2>
-            <p className="text-neutral-600 mb-6">There was an error processing your payment.</p>
+            <p className="text-neutral-600 mb-4">{errorMessage || 'There was an error processing your payment.'}</p>
             <div className="space-y-3">
               <Button
                 onClick={() => router.push('/checkout')}

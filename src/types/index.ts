@@ -245,6 +245,13 @@ export interface CreateOrderRequest {
   tableNumber?: string;
   pickupTime?: string;
   deliveryAddressId?: string;
+  deliveryAddress?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
   specialInstructions?: string;
   paymentMethod: PaymentMethod;
   tipAmount?: number;

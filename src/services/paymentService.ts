@@ -1,25 +1,7 @@
 // src/services/paymentService.ts
 
 import Stripe from 'stripe';
-
-// Initialize Stripe dynamically based on settings
-async function getStripeInstance(): Promise<Stripe | null> {
-  try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/settings`);
-    const data = await response.json();
-    
-    if (!data.data?.stripeSecretKey) {
-      return null;
-    }
-    
-    return new Stripe(data.data.stripeSecretKey, {
-      apiVersion: '2025-02-24.acacia',
-    });
-  } catch (error) {
-    console.error('Failed to initialize Stripe:', error);
-    return null;
-  }
-}
+import { getStripeInstance } from '@/lib/stripe';
 
 /**
  * Standard response format for payment operations
@@ -52,12 +34,12 @@ export async function createPaymentIntent(
       };
     }
 
-    // Get Stripe instance from settings
+    // Get Stripe instance from database settings
     const stripe = await getStripeInstance();
     if (!stripe) {
       return {
         success: false,
-        error: 'Stripe is not configured',
+        error: 'Stripe is not configured. Please add your Stripe keys in Settings.',
       };
     }
 
@@ -94,7 +76,7 @@ export async function confirmPayment(
     if (!stripe) {
       return {
         success: false,
-        error: 'Stripe is not configured',
+        error: 'Stripe is not configured. Please add your Stripe keys in Settings.',
       };
     }
     
@@ -136,7 +118,7 @@ export async function createRefund(
     if (!stripe) {
       return {
         success: false,
-        error: 'Stripe is not configured',
+        error: 'Stripe is not configured. Please add your Stripe keys in Settings.',
       };
     }
     
@@ -264,7 +246,7 @@ export async function getPaymentIntent(
     if (!stripe) {
       return {
         success: false,
-        error: 'Stripe is not configured',
+        error: 'Stripe is not configured. Please add your Stripe keys in Settings.',
       };
     }
     
@@ -292,7 +274,7 @@ export async function cancelPaymentIntent(
     if (!stripe) {
       return {
         success: false,
-        error: 'Stripe is not configured',
+        error: 'Stripe is not configured. Please add your Stripe keys in Settings.',
       };
     }
     

@@ -160,6 +160,20 @@ function CheckoutForm() {
   const { items, subtotal, clearCart } = useCart();
   const { data: session } = useSession();
   const { restaurantId } = useSettingsStore();
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Client-side only mounting
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Validate restaurant ID on mount
+  useEffect(() => {
+    if (isMounted && !restaurantId) {
+      toast.error('Restaurant configuration missing. Please refresh the page.');
+      router.push('/');
+    }
+  }, [restaurantId, router, isMounted]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [estimatedDeliveryTime, setEstimatedDeliveryTime] = useState('');
@@ -212,9 +226,9 @@ function CheckoutForm() {
     }
   }, [orderType, setValue]);
 
-  // Calculate pricing
-  const taxRate = 0.08; // 8% tax (should come from settings)
-  const taxAmount = subtotal * taxRate;
+  // Calculate pricing (use store's tax rate, no fallback)
+  const { taxRate } = useSettingsStore();
+  const taxAmount = subtotal * (taxRate || 0);
   const tipAmount = tipPercentage >= 0 ? (subtotal * tipPercentage) / 100 : 0;
   const totalAmount = subtotal + taxAmount + deliveryFee + tipAmount;
 
@@ -228,27 +242,44 @@ function CheckoutForm() {
   // Initialize Stripe card element when payment method is card
   useEffect(() => {
     if (paymentMethod === PAYMENT_METHOD.STRIPE && stripeLoaded && !stripeCardElement) {
-      const stripe = (window as any).Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
-      const elements = stripe.elements();
-      const cardElement = elements.create('card', {
-        style: {
-          base: {
-            fontSize: '16px',
-            color: '#424770',
-            '::placeholder': {
-              color: '#aab7c4',
+      // Get publishable key from settings (NO env fallback)
+      fetch('/api/settings')
+        .then(res => res.json())
+        .then(data => {
+          const publishableKey = data.data?.stripePublishableKey;
+          
+          if (!publishableKey || publishableKey.trim() === '' || publishableKey === 'pk_test_dummy') {
+            console.warn('⚠️ Stripe publishable key not configured in settings');
+            setCardError('Stripe is not configured. Please add Stripe keys in Admin Settings > Payment.');
+            return;
+          }
+          
+          const stripe = (window as any).Stripe(publishableKey);
+          const elements = stripe.elements();
+          const cardElement = elements.create('card', {
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                  color: '#aab7c4',
+                },
+              },
+              invalid: {
+                color: '#9e2146',
+              },
             },
-          },
-          invalid: {
-            color: '#9e2146',
-          },
-        },
-      });
-      cardElement.mount('#card-element');
-      cardElement.on('change', (event: any) => {
-        setCardError(event.error ? event.error.message : '');
-      });
-      setStripeCardElement(cardElement);
+          });
+          cardElement.mount('#card-element');
+          cardElement.on('change', (event: any) => {
+            setCardError(event.error ? event.error.message : '');
+          });
+          setStripeCardElement(cardElement);
+        })
+        .catch(error => {
+          console.error('Failed to load Stripe publishable key:', error);
+          setCardError('Failed to initialize payment form. Please refresh the page.');
+        });
     }
 
     // Cleanup
@@ -285,58 +316,54 @@ function CheckoutForm() {
     }
   };
 
-  const onSubmit = async (data: CheckoutFormData) => {
+  // Update delivery fee in form when it changes
+  useEffect(() => {
+    if (orderType !== ORDER_TYPE.DELIVERY) {
+      setDeliveryFee(0);
+    }
+  }, [orderType]);
+
+const onSubmit = async (data: CheckoutFormData) => {
     console.log('✅ onSubmit called with data:', data);
-    console.log('Session:', session);
-    console.log('Restaurant ID from settings store:', restaurantId);
-    console.log('Is restaurantId valid?', !!restaurantId);
     setIsSubmitting(true);
 
     try {
-      console.log('✅ Starting order creation process...');
-      console.log('Cart items:', items);
-      console.log('Subtotal:', subtotal);
-      
-      if (!session?.user?.id && !restaurantId) {
-        console.error('❌ Missing session or restaurant ID');
+      // CRITICAL: Validate restaurant ID is loaded
+      if (!restaurantId) {
+        throw new Error('Restaurant configuration not loaded. Please refresh the page.');
+      }
+
+      // CRITICAL: Validate session for non-guest checkouts
+      if (!session?.user?.id) {
         throw new Error('Please log in to place an order');
       }
+
+      // Check for existing pending order (prevent duplicates)
+      const checkExistingResponse = await fetch(
+        `/api/orders?restaurantId=${restaurantId}&customerId=${session.user.id}&status=PENDING&limit=1`
+      );
+      const existingData = await checkExistingResponse.json();
       
-      // Prepare order data
-      const orderData: {
-        type: OrderType;
-        customerId: string;
-        restaurantId: string;
-        items: Array<{
-          menuItemId: string;
-          name: string;
-          price: number;
-          quantity: number;
-          customizations?: unknown;
-          specialInstructions?: string;
-        }>;
-        subtotal: number;
-        taxAmount: number;
-        serviceFee: number;
-        tipAmount: number;
-        discountAmount: number;
-        totalAmount: number;
-        deliveryFee: number;
-        paymentMethod: PaymentMethod;
-        specialInstructions?: string;
-        tableNumber?: string;
-        pickupTime?: string;
-        deliveryAddress?: {
-          street: string;
-          city: string;
-          state: string;
-          zipCode: string;
-          country: string;
-        };
-      } = {
+      if (existingData.success && existingData.data?.length > 0) {
+        const existingOrder = existingData.data[0];
+        const orderAge = Date.now() - new Date(existingOrder.createdAt).getTime();
+        
+        // If pending order exists from last 5 minutes, prevent duplicate
+        if (orderAge < 5 * 60 * 1000) {
+          throw new Error('You have a pending order. Please complete or cancel it first.');
+        }
+      }
+      
+      console.log('✅ Starting order creation process...');
+      console.log('Restaurant ID:', restaurantId);
+      console.log('Cart items:', items);
+      console.log('Payment method:', data.paymentMethod);
+      
+      // Prepare base order data (used for all payment methods)
+      const baseOrderData = {
         type: data.orderType,
-        customerId: session?.user?.id || 'cml4leh920001tn7k3z7sddwm',
-         restaurantId: restaurantId || 'rest123456789',
+        customerId: session.user.id,
+        restaurantId: restaurantId,
         items: items.map(item => ({
           menuItemId: item.menuItemId,
           name: item.name,
@@ -354,30 +381,30 @@ function CheckoutForm() {
         deliveryFee,
         paymentMethod: data.paymentMethod,
         specialInstructions: data.specialInstructions,
+        // Type-specific fields
+        ...(data.orderType === ORDER_TYPE.DINE_IN && { tableNumber: data.tableNumber }),
+        ...(data.orderType === ORDER_TYPE.PICKUP && { pickupTime: data.pickupTime }),
+        ...(data.orderType === ORDER_TYPE.DELIVERY && {
+          deliveryAddress: {
+            street: data.deliveryStreet!,
+            city: data.deliveryCity!,
+            state: data.deliveryState!,
+            zipCode: data.deliveryZipCode!,
+            country: data.deliveryCountry,
+          }
+        }),
       };
 
-      // Add type-specific fields
-      if (data.orderType === ORDER_TYPE.DINE_IN) {
-        orderData.tableNumber = data.tableNumber;
-      } else if (data.orderType === ORDER_TYPE.PICKUP) {
-        orderData.pickupTime = data.pickupTime;
-      } else if (data.orderType === ORDER_TYPE.DELIVERY) {
-        orderData.deliveryAddress = {
-          street: data.deliveryStreet!,
-          city: data.deliveryCity!,
-          state: data.deliveryState!,
-          zipCode: data.deliveryZipCode!,
-          country: data.deliveryCountry,
-        };
-      }
-
-      // Handle different payment methods
-      if (data.paymentMethod === PAYMENT_METHOD.PAYPAL) {
-        // PayPal payment flow
+      // ==========================================
+      // PAYMENT METHOD: CASH
+      // ==========================================
+      if (data.paymentMethod === PAYMENT_METHOD.CASH) {
+        console.log('💵 Processing CASH payment...');
+        
         const orderResponse = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(orderData),
+          body: JSON.stringify(baseOrderData),
         });
 
         const orderResult = await orderResponse.json();
@@ -386,7 +413,34 @@ function CheckoutForm() {
           throw new Error(orderResult.error || 'Order creation failed');
         }
 
-        // Create PayPal order
+        clearCart();
+        toast.success('Order placed successfully!');
+        router.push(`/order-tracking/${orderResult.data.id}`);
+        return;
+      }
+
+      // ==========================================
+      // PAYMENT METHOD: PAYPAL
+      // ==========================================
+      if (data.paymentMethod === PAYMENT_METHOD.PAYPAL) {
+        console.log('💳 Processing PayPal payment...');
+        
+        // Step 1: Create database order first
+        const orderResponse = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(baseOrderData),
+        });
+
+        const orderResult = await orderResponse.json();
+
+        if (!orderResult.success) {
+          throw new Error(orderResult.error || 'Order creation failed');
+        }
+
+        console.log('✅ Order created:', orderResult.data.id);
+
+        // Step 2: Create PayPal order
         const paypalResponse = await fetch('/api/payments/paypal/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -400,39 +454,63 @@ function CheckoutForm() {
         const paypalData = await paypalResponse.json();
 
         if (!paypalData.success || !paypalData.data.approveUrl) {
+          // PayPal creation failed - order is orphaned but that's OK
+          // Admin can see it and customer can retry
           throw new Error(paypalData.error || 'PayPal payment setup failed');
         }
 
-        // Show development mode notice if applicable
+        // Development mode - simulate success
         if (paypalData.isDevelopmentMode) {
           console.log('🧪 DEVELOPMENT MODE: Simulating PayPal redirect');
           toast.success('Development Mode: PayPal payment simulated');
-          
-          // In dev mode, skip PayPal redirect and go straight to success
           clearCart();
           toast.success('Order placed successfully! (Development Mode)');
           router.push(`/order-tracking/${orderResult.data.id}`);
           return;
         }
 
-        // Redirect to PayPal approval page
+        // Production mode - redirect to PayPal
+        console.log('Redirecting to PayPal:', paypalData.data.approveUrl);
         window.location.href = paypalData.data.approveUrl;
         return;
+      }
 
-     } else if (data.paymentMethod === PAYMENT_METHOD.STRIPE) {
-        // Skip Stripe validation for now - will be handled in order creation
-        console.log('Stripe payment selected - skipping for testing');
+      // ==========================================
+      // PAYMENT METHOD: STRIPE
+      // ==========================================
+      if (data.paymentMethod === PAYMENT_METHOD.STRIPE) {
+        console.log('💳 Processing Stripe payment...');
+        
+        // Validate card element exists
+        if (!stripeCardElement) {
+          throw new Error('Payment form not loaded. Please refresh the page and try again.');
+        }
 
-        // Create payment intent
+        // Step 1: Create database order FIRST (so we have real order ID)
+        const orderResponse = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(baseOrderData),
+        });
+
+        const orderResult = await orderResponse.json();
+
+        if (!orderResult.success) {
+          throw new Error(orderResult.error || 'Order creation failed');
+        }
+
+        console.log('✅ Order created:', orderResult.data.id);
+
+        // Step 2: Create payment intent with REAL order ID
         const paymentResponse = await fetch('/api/payments/stripe/create-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             amount: Math.round(totalAmount * 100), // Convert to cents
             currency: 'usd',
-            orderId: 'temp-order-id', // Will be replaced after order creation
-            customerId: session?.user?.id,
-            customerEmail: session?.user?.email,
+            orderId: orderResult.data.id, // REAL order ID, not temp!
+            customerId: session.user.id,
+            customerEmail: session.user.email,
           }),
         });
 
@@ -442,79 +520,58 @@ function CheckoutForm() {
           throw new Error(paymentData.error || 'Payment setup failed');
         }
 
-        // Show development mode notice if applicable
+        // Development mode - simulate success
         if (paymentData.isDevelopmentMode) {
           console.log('🧪 DEVELOPMENT MODE: Simulating Stripe payment');
-          toast.success('Development Mode: Payment simulated successfully');
-          // Continue to create order below
-        } else {
-          // Production mode - Confirm card payment
-          const stripe = (window as any).Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-          const { error: confirmError } = await stripe.confirmCardPayment(
-            paymentData.data.clientSecret,
-            {
-              payment_method: {
-                card: stripeCardElement,
-                billing_details: {
-                  name: session?.user?.name || 'Guest',
-                  email: session?.user?.email,
-                },
-              },
-            }
-          );
-
-          if (confirmError) {
-            throw new Error(confirmError.message || 'Payment failed');
-          }
-
-          toast.success('Payment successful!');
-          // Continue to create order below
+          toast.success('Development Mode: Payment simulated. Add Stripe keys in Admin Settings.');
+          clearCart();
+          toast.success('Order placed successfully! (Development Mode)');
+          router.push(`/order-tracking/${orderResult.data.id}`);
+          return;
         }
+
+        // Step 3: Confirm card payment (PRODUCTION MODE)
+        const settingsRes = await fetch('/api/settings');
+        const settingsData = await settingsRes.json();
+        const publishableKey = settingsData.data?.stripePublishableKey;
+        
+        if (!publishableKey || publishableKey.trim() === '' || publishableKey === 'pk_test_dummy') {
+          throw new Error('Stripe is not configured. Please add Stripe keys in Admin Settings > Payment.');
+        }
+        
+        const stripe = (window as any).Stripe(publishableKey);
+        const { error: confirmError } = await stripe.confirmCardPayment(
+          paymentData.data.clientSecret,
+          {
+            payment_method: {
+              card: stripeCardElement,
+              billing_details: {
+                name: session.user.name || 'Guest',
+                email: session.user.email,
+              },
+            },
+          }
+        );
+
+        if (confirmError) {
+          // Payment failed - order exists but payment failed
+          // This is OK - admin can see it and customer can retry
+          throw new Error(confirmError.message || 'Payment failed');
+        }
+
+        // Payment succeeded!
+        console.log('✅ Payment confirmed');
+        toast.success('Payment successful!');
+        clearCart();
+        router.push(`/order-tracking/${orderResult.data.id}`);
+        return;
       }
 
-      // Log the order data before sending
-      console.log('=== ORDER DATA BEING SENT ===');
-      console.log(JSON.stringify(orderData, null, 2));
-      console.log('=== END ORDER DATA ===');
-
-      // Create order for CASH and STRIPE (PayPal already handled above with return)
-
-      const orderResponse = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-
-      const orderResult = await orderResponse.json();
-      
-      console.log('=== ORDER API RESPONSE ===');
-      console.log('Status:', orderResponse.status);
-      console.log('Response:', JSON.stringify(orderResult, null, 2));
-      console.log('=== END RESPONSE ===');
-
-      if (!orderResult.success) {
-        console.error('❌ Order creation failed');
-        console.error('Error:', orderResult.error);
-        console.error('Details:', orderResult.details);
-        
-        // Show detailed error to user
-        const errorMessage = orderResult.details 
-          ? `${orderResult.error}: ${JSON.stringify(orderResult.details)}`
-          : orderResult.error || 'Order creation failed';
-        
-        throw new Error(errorMessage);
-      }
-
-      // Clear cart and redirect to order tracking
-      clearCart();
-      toast.success('Order placed successfully!');
-      router.push(`/order-tracking/${orderResult.data.id}`);
+      // Should never reach here
+      throw new Error('Invalid payment method');
 
     } catch (error) {
-      console.error('❌❌❌ CHECKOUT ERROR ❌❌❌');
-      console.error('Error type:', typeof error);
-      console.error('Error:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+      console.error('❌ CHECKOUT ERROR:', error);
       toast.error(error instanceof Error ? error.message : 'An error occurred during checkout');
     } finally {
       setIsSubmitting(false);
@@ -832,10 +889,15 @@ function CheckoutForm() {
       {/* Submit Button */}
       <Button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || !restaurantId}
         className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
       >
-        {isSubmitting ? (
+        {!restaurantId ? (
+          <>
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            Loading...
+          </>
+        ) : isSubmitting ? (
           <>
             <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             {paymentMethod === PAYMENT_METHOD.PAYPAL ? 'Redirecting to PayPal...' : 'Processing...'}
@@ -863,11 +925,11 @@ interface OrderSummaryProps {
 
 function OrderSummary({ items, subtotal }: OrderSummaryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { taxRate } = useSettingsStore();
 
-  const taxRate = 0.08;
-  const taxAmount = subtotal * taxRate;
-  const deliveryFee = 5.00; // TODO: Calculate based on zone
-  const tipAmount = subtotal * 0.15;
+  const taxAmount = subtotal * (taxRate || 0);
+  const deliveryFee = 0; // Will be calculated based on actual delivery address
+  const tipAmount = 0; // Will be added on checkout page
   const totalAmount = subtotal + taxAmount + deliveryFee + tipAmount;
 
   return (

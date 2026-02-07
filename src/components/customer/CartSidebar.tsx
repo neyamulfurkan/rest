@@ -26,8 +26,9 @@ export function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     removeItem,
   } = useCart();
 
-  // Calculate delivery fee (placeholder - would come from settings/delivery zone)
-  const deliveryFee = subtotal >= 50 ? 0 : 5;
+  // Calculate delivery fee (will be calculated on checkout page based on actual address)
+  // Show $0 in cart sidebar as fee depends on delivery address
+  const deliveryFee = 0; // Actual fee calculated at checkout
   
   // Calculate tax (placeholder - would come from settings)
   const taxRate = 0.08; // 8%
@@ -212,13 +213,11 @@ export function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                   <div className="flex justify-between" style={{ color: 'hsl(var(--foreground) / 0.7)' }}>
                     <span>
                       Delivery fee
-                      {deliveryFee === 0 && (
-                        <span className="text-green-600 text-sm ml-1">
-                          (Free)
-                        </span>
-                      )}
+                      <span className="text-xs ml-1">
+                        (Calculated at checkout)
+                      </span>
                     </span>
-                    <span>{formatCurrency(deliveryFee)}</span>
+                    <span>-</span>
                   </div>
 
                   {/* Tax */}

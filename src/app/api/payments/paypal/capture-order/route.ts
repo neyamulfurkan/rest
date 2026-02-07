@@ -14,24 +14,69 @@ const captureOrderSchema = z.object({
 });
 
 /**
- * PayPal API credentials and endpoints
+ * Get PayPal credentials from database
  */
-const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
-const PAYPAL_API_BASE =
-  process.env.NODE_ENV === 'production'
-    ? 'https://api-m.paypal.com'
-    : 'https://api-m.sandbox.paypal.com';
+async function getPayPalCredentials(): Promise<{ clientId: string; clientSecret: string } | null> {
+  try {
+    const { prisma } = await import('@/lib/prisma');
+    
+    const restaurant = await prisma.restaurant.findFirst({
+      select: { id: true }
+    });
+
+    if (!restaurant) return null;
+
+    const [clientIdSetting, clientSecretSetting] = await Promise.all([
+      prisma.setting.findUnique({
+        where: {
+          restaurantId_key: {
+            restaurantId: restaurant.id,
+            key: 'paypalClientId'
+          }
+        }
+      }),
+      prisma.setting.findUnique({
+        where: {
+          restaurantId_key: {
+            restaurantId: restaurant.id,
+            key: 'paypalClientSecret'
+          }
+        }
+      })
+    ]);
+
+    if (!clientIdSetting?.value || !clientSecretSetting?.value) {
+      return null;
+    }
+
+    const clientId = JSON.parse(clientIdSetting.value);
+    const clientSecret = JSON.parse(clientSecretSetting.value);
+
+    if (!clientId || !clientSecret) return null;
+
+    return { clientId, clientSecret };
+  } catch (error) {
+    console.error('Failed to get PayPal credentials:', error);
+    return null;
+  }
+}
 
 /**
  * Get PayPal access token for API requests
  */
 async function getPayPalAccessToken(): Promise<string> {
-  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
-    throw new Error('PayPal credentials not configured');
+  const credentials = await getPayPalCredentials();
+  
+  if (!credentials) {
+    throw new Error('PayPal credentials not configured in database settings');
   }
 
-  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
+  const auth = Buffer.from(`${credentials.clientId}:${credentials.clientSecret}`).toString('base64');
+  
+  const PAYPAL_API_BASE =
+    process.env.NODE_ENV === 'production'
+      ? 'https://api-m.paypal.com'
+      : 'https://api-m.sandbox.paypal.com';
 
   const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
     method: 'POST',
@@ -54,6 +99,11 @@ async function getPayPalAccessToken(): Promise<string> {
  * Capture a PayPal order
  */
 async function capturePayPalOrder(paypalOrderId: string, accessToken: string) {
+  const PAYPAL_API_BASE =
+    process.env.NODE_ENV === 'production'
+      ? 'https://api-m.paypal.com'
+      : 'https://api-m.sandbox.paypal.com';
+      
   const response = await fetch(
     `${PAYPAL_API_BASE}/v2/checkout/orders/${paypalOrderId}/capture`,
     {
