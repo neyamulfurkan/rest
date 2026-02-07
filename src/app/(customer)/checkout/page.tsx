@@ -258,6 +258,13 @@ function CheckoutForm() {
           
           const stripe = (window as any).__STRIPE_INSTANCE__;
           const elements = stripe.elements();
+          
+          // CRITICAL FIX: Clear any existing content before mounting
+          const cardContainer = document.getElementById('card-element');
+          if (cardContainer) {
+            cardContainer.innerHTML = ''; // Clear children
+          }
+          
           const cardElement = elements.create('card', {
             style: {
               base: {
@@ -933,7 +940,7 @@ function OrderSummary({ items, subtotal }: OrderSummaryProps) {
   const totalAmount = subtotal + taxAmount + deliveryFee + tipAmount;
 
   return (
-    <div className="bg-white rounded-2xl shadow-md p-6 lg:sticky lg:top-8 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto">
+    <div className="bg-white rounded-2xl shadow-md p-6 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto">
       <h2 className="text-xl font-semibold text-neutral-900 mb-4">Order Summary</h2>
 
       {/* Items List */}
