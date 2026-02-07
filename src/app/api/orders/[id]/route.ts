@@ -140,7 +140,7 @@ export async function PATCH(
       }
 
       // Update order status to CANCELLED
-      const updatedOrder = await updateOrderStatus(
+      await updateOrderStatus(
         orderId,
         {
           status: 'CANCELLED',
@@ -148,6 +148,21 @@ export async function PATCH(
         },
         (session.user as any)?.id || 'CUSTOMER'
       );
+
+      // Fetch updated order with relations for notification
+      const updatedOrder = await getOrderById(orderId);
+
+      // Send status update notification
+      if (updatedOrder) {
+        try {
+          const { sendOrderStatusUpdate } = await import('@/services/notificationService');
+          await sendOrderStatusUpdate(updatedOrder).catch(err =>
+            console.error('Failed to send order status update:', err)
+          );
+        } catch (error) {
+          console.error('Notification service error:', error);
+        }
+      }
 
       return NextResponse.json({
         success: true,
@@ -178,7 +193,7 @@ export async function PATCH(
     const validated = updateStatusSchema.parse(body);
 
     // Update order status
-    const updatedOrder = await updateOrderStatus(
+    await updateOrderStatus(
       orderId,
       {
         status: validated.status as any,
@@ -186,6 +201,21 @@ export async function PATCH(
       },
       (session.user as any)?.id || 'SYSTEM'
     );
+
+    // Fetch updated order with relations for notification
+    const updatedOrder = await getOrderById(orderId);
+
+    // Send status update notification
+    if (updatedOrder) {
+      try {
+        const { sendOrderStatusUpdate } = await import('@/services/notificationService');
+        await sendOrderStatusUpdate(updatedOrder).catch(err =>
+          console.error('Failed to send order status update:', err)
+        );
+      } catch (error) {
+        console.error('Notification service error:', error);
+      }
+    }
 
     return NextResponse.json({
       success: true,

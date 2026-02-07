@@ -134,6 +134,9 @@ export async function sendOrderConfirmation(
   const totalAmount = order.totalAmount;
   const orderType = order.type;
 
+  // Check customer notification preferences
+  const prefs = (order.customer as any).notificationPreferences || { email: true, sms: true };
+
   // SMS message
   const smsMessage = `Hi ${customerName}! Your order ${orderNumber} (${orderType}) has been confirmed. Total: $${totalAmount.toFixed(2)}. We'll notify you when it's ready!`;
 
@@ -141,7 +144,7 @@ export async function sendOrderConfirmation(
   const emailSubject = `Order Confirmation - ${orderNumber}`;
   const emailHtml = generateOrderConfirmationEmail(order);
 
-  // Send both notifications
+  // Send both notifications (respecting preferences)
   const [smsResult, emailResult] = await Promise.all([
     order.customer.phone ? sendSMS(order.customer.phone, smsMessage) : Promise.resolve({ success: false }),
     sendEmail(order.customer.email, emailSubject, emailHtml),
@@ -167,6 +170,9 @@ export async function sendOrderStatusUpdate(
   const customerName = order.customer.name;
   const orderNumber = order.orderNumber;
 
+  // Check customer notification preferences
+  const prefs = (order.customer as any).notificationPreferences || { email: true, sms: true };
+
   // Generate status-specific messages
   const statusMessages = getOrderStatusMessages(status, orderNumber);
 
@@ -177,10 +183,10 @@ export async function sendOrderStatusUpdate(
   const emailSubject = `Order Update - ${orderNumber}`;
   const emailHtml = generateOrderStatusUpdateEmail(order, status, statusMessages.email);
 
-  // Send both notifications
+  // Send both notifications (respecting preferences)
   const [smsResult, emailResult] = await Promise.all([
-    order.customer.phone ? sendSMS(order.customer.phone, smsMessage) : Promise.resolve({ success: false }),
-    sendEmail(order.customer.email, emailSubject, emailHtml),
+    prefs.sms && order.customer.phone ? sendSMS(order.customer.phone, smsMessage) : Promise.resolve({ success: false }),
+    prefs.email ? sendEmail(order.customer.email, emailSubject, emailHtml) : Promise.resolve({ success: false }),
   ]);
 
   return {
@@ -210,6 +216,9 @@ export async function sendBookingConfirmation(
   const time = booking.time;
   const guests = booking.guests;
 
+  // Check customer notification preferences
+  const prefs = (booking.customer as any).notificationPreferences || { email: true, sms: true };
+
   // SMS message
   const smsMessage = `Hi ${customerName}! Your table reservation ${bookingNumber} is confirmed for ${date} at ${time} for ${guests} guest${guests > 1 ? 's' : ''}. See you soon!`;
 
@@ -217,10 +226,10 @@ export async function sendBookingConfirmation(
   const emailSubject = `Reservation Confirmed - ${bookingNumber}`;
   const emailHtml = generateBookingConfirmationEmail(booking);
 
-  // Send both notifications
+  // Send both notifications (respecting preferences)
   const [smsResult, emailResult] = await Promise.all([
-    booking.customer.phone ? sendSMS(booking.customer.phone, smsMessage) : Promise.resolve({ success: false }),
-    sendEmail(booking.customer.email, emailSubject, emailHtml),
+    prefs.sms && booking.customer.phone ? sendSMS(booking.customer.phone, smsMessage) : Promise.resolve({ success: false }),
+    prefs.email ? sendEmail(booking.customer.email, emailSubject, emailHtml) : Promise.resolve({ success: false }),
   ]);
 
   return {
@@ -248,6 +257,9 @@ export async function sendBookingReminder(
   const time = booking.time;
   const guests = booking.guests;
 
+  // Check customer notification preferences
+  const prefs = (booking.customer as any).notificationPreferences || { email: true, sms: true };
+
   // SMS message
   const smsMessage = `Hi ${customerName}! Reminder: Your table for ${guests} is reserved ${hoursBeforeBooking === 24 ? 'tomorrow' : 'in 2 hours'} on ${date} at ${time}. Reply CANCEL to cancel.`;
 
@@ -255,10 +267,10 @@ export async function sendBookingReminder(
   const emailSubject = `Reservation Reminder - ${date} at ${time}`;
   const emailHtml = generateBookingReminderEmail(booking, hoursBeforeBooking);
 
-  // Send both notifications
+  // Send both notifications (respecting preferences)
   const [smsResult, emailResult] = await Promise.all([
-    booking.customer.phone ? sendSMS(booking.customer.phone, smsMessage) : Promise.resolve({ success: false }),
-    sendEmail(booking.customer.email, emailSubject, emailHtml),
+    prefs.sms && booking.customer.phone ? sendSMS(booking.customer.phone, smsMessage) : Promise.resolve({ success: false }),
+    prefs.email ? sendEmail(booking.customer.email, emailSubject, emailHtml) : Promise.resolve({ success: false }),
   ]);
 
   return {

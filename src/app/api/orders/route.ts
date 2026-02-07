@@ -168,6 +168,16 @@ export async function POST(request: NextRequest) {
     // Create order using service
     const order = await createOrder(createOrderRequest);
 
+    // Send order confirmation notification
+    try {
+      const { sendOrderConfirmation } = await import('@/services/notificationService');
+      await sendOrderConfirmation(order).catch(err => 
+        console.error('Failed to send order confirmation:', err)
+      );
+    } catch (error) {
+      console.error('Notification service error:', error);
+    }
+
     return NextResponse.json(
       {
         success: true,

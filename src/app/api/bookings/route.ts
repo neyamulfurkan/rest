@@ -287,8 +287,15 @@ export async function POST(request: NextRequest) {
       customerId,
     });
 
-    // TODO: Send booking confirmation email/SMS
-    // This would be handled by a separate notification service
+    // Send booking confirmation notification
+    try {
+      const { sendBookingConfirmation } = await import('@/services/notificationService');
+      await sendBookingConfirmation(booking).catch(err =>
+        console.error('Failed to send booking confirmation:', err)
+      );
+    } catch (error) {
+      console.error('Notification service error:', error);
+    }
 
     const response: ApiResponse<BookingWithRelations> = {
       success: true,

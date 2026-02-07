@@ -153,17 +153,18 @@ model CustomizationOption {
 }
 
 model Customer {
-  id                String     @id @default(cuid())
-  email             String     @unique
-  name              String
-  phone             String?
-  passwordHash      String?
-  isGuest           Boolean    @default(false)
-  profileImage      String?
-  restaurantId      String
-  preferredLanguage String     @default("en")
-  marketingConsent  Boolean    @default(false)
-  totalOrders       Int        @default(0)
+  id                        String     @id @default(cuid())
+  email                     String     @unique
+  name                      String
+  phone                     String?
+  passwordHash              String?
+  isGuest                   Boolean    @default(false)
+  profileImage              String?
+  restaurantId              String
+  preferredLanguage         String     @default("en")
+  marketingConsent          Boolean    @default(false)
+  notificationPreferences   Json?      @default("{\"email\":true,\"sms\":true}")
+  totalOrders               Int        @default(0)
   totalSpent        Float      @default(0)
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
