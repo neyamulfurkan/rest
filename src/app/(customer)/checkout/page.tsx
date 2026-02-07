@@ -709,8 +709,19 @@ const onSubmit = async (data: CheckoutFormData) => {
     }
   };
 
-  return (
-    <form 
+return (
+    <>
+      <Script
+        src="https://js.stripe.com/v3/"
+        onLoad={() => {
+          console.log('✅✅✅ Stripe.js loaded!');
+          setStripeLoaded(true);
+        }}
+        onError={(e) => console.error('❌ Stripe.js failed to load:', e)}
+        strategy="lazyOnload"
+      />
+      
+      <form
         onSubmit={(e) => {
           e.preventDefault();
           console.log('Form onSubmit called');
@@ -898,13 +909,7 @@ const onSubmit = async (data: CheckoutFormData) => {
         </AnimatePresence>
       </div>
 
-      {/* Load Stripe.js */}
-      <Script
-        src="https://js.stripe.com/v3/"
-        onLoad={() => setStripeLoaded(true)}
-      />
-
-      {/* Payment Method */}
+      
       <div className="bg-white rounded-2xl shadow-md p-6">
         <h2 className="text-xl font-semibold text-neutral-900 mb-4">Payment Method</h2>
         
@@ -1046,6 +1051,7 @@ const onSubmit = async (data: CheckoutFormData) => {
         )}
       </Button>
     </form>
+    </>
   );
 }
 
