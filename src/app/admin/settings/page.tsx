@@ -1287,7 +1287,7 @@ export default function AdminSettingsPage() {
                   </label>
                   <Input
                     type="password"
-                    value={settings.stripeSecretKey || ''}
+                    value={settings.stripePublishableKey || ''}
                     onChange={(e) =>
                       updateSetting('stripePublishableKey', e.target.value)
                     }
