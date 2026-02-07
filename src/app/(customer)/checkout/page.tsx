@@ -343,7 +343,16 @@ function CheckoutForm({
         });
 
         const container = document.getElementById('card-element');
+        console.log('🔍 Card element container:', container);
+        console.log('🔍 Mounted state:', mounted);
+        
+        if (!container) {
+          console.error('❌ Card element container not found in DOM!');
+          return;
+        }
+        
         if (container && mounted) {
+          console.log('✅ Mounting Stripe card element...');
           cardElement.mount('#card-element');
           
           cardElement.on('change', (event: any) => {
@@ -916,9 +925,15 @@ const onSubmit = async (data: CheckoutFormData) => {
               <label className="block text-sm font-medium text-neutral-700 mb-3">
                 Card Details
               </label>
-              <div id="card-element" className="p-3 border border-neutral-300 rounded-lg bg-white"></div>
+              <div 
+                id="card-element" 
+                className="p-3 border border-neutral-300 rounded-lg bg-white min-h-[40px]"
+              ></div>
               {cardError && (
                 <p className="text-sm text-error-500 mt-2">{cardError}</p>
+              )}
+              {!stripeCardElement && !cardError && stripeLoaded && (
+                <p className="text-sm text-neutral-400 mt-2">Loading card form...</p>
               )}
             </div>
             <div className="flex items-center gap-2 text-xs text-neutral-500">
