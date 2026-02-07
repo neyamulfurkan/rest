@@ -275,6 +275,20 @@ export async function POST(request: NextRequest) {
         updateData.heroImageUrl = null;
         updateData.heroVideoUrl = null;
       }
+    } else {
+      // If heroMediaType is not changing, still update the relevant field
+      if (validated.heroVideoUrl !== undefined) {
+        updateData.heroVideoUrl = validated.heroVideoUrl;
+      }
+      if (validated.heroImageUrl !== undefined) {
+        updateData.heroImageUrl = validated.heroImageUrl;
+      }
+      if (validated.heroImages !== undefined) {
+        updateData.heroImages = validated.heroImages;
+      }
+      if (validated.heroSlideshowInterval !== undefined) {
+        updateData.heroSlideshowInterval = validated.heroSlideshowInterval;
+      }
     }
 
     // Perform database update
