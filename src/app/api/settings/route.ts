@@ -186,6 +186,15 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // DEBUG: Log what we're receiving
+    console.log('🔴 INCOMING SETTINGS DATA:', {
+      aboutStory: body.aboutStory?.substring(0, 100),
+      aboutMission: body.aboutMission?.substring(0, 100),
+      aboutValues: body.aboutValues?.substring(0, 100),
+      galleryImages: Array.isArray(body.galleryImages) ? body.galleryImages.length : typeof body.galleryImages,
+      heroVideoUrl: body.heroVideoUrl
+    });
+
     // Validate request body
     const validated = settingsSchema.parse(body);
     

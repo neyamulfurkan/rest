@@ -950,6 +950,14 @@ export default function AdminSettingsPage() {
         console.error('Save settings error:', errorData);
         if (errorData.details) {
           console.error('Validation details:', errorData.details);
+          // Show each validation error clearly
+          errorData.details.forEach((err: any, i: number) => {
+            console.error(`❌ Validation Error ${i+1}:`, {
+              field: err.field,
+              message: err.message,
+              code: err.code
+            });
+          });
         }
         throw new Error(errorData.error || 'Failed to save settings');
       }
