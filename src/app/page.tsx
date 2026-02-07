@@ -423,16 +423,19 @@ function HeroMedia() {
             muted
             loop
             playsInline
-            className={`absolute inset-0 w-full h-full transition-opacity duration-700 ${
+            className={`transition-opacity duration-700 ${
               isVideoLoaded ? 'opacity-100' : 'opacity-0'
             }`}
             style={{
-              width: '100vw',
-              height: '100vh',
-              objectFit: 'cover',
               position: 'absolute',
-              top: 0,
-              left: 0
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              minWidth: '100%',
+              minHeight: '100%',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'cover'
             }}
             onCanPlayThrough={() => setIsVideoLoaded(true)}
           >
@@ -445,7 +448,7 @@ function HeroMedia() {
     }
 
     return (
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 overflow-hidden">
         {/* Thumbnail placeholder */}
         {!isVideoLoaded && (
           <div className="absolute inset-0 z-0">
@@ -465,23 +468,29 @@ function HeroMedia() {
           </div>
         )}
         
-        {/* Video iframe */}
-        <iframe
-          src={videoData.url}
-          className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-1000 ${
-            isVideoLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-          style={{ 
-            border: 'none',
-            width: '100vw',
-            height: '100vh',
-            objectFit: 'cover',
-            transform: 'scale(1.01)'
-          }}
-          allow="autoplay; fullscreen"
-          onLoad={() => setTimeout(() => setIsVideoLoaded(true), 2000)}
-        />
-        <div className="absolute inset-0 bg-black/60" />
+        {/* Video iframe wrapper - CRITICAL for aspect ratio coverage */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full w-auto h-auto">
+          <iframe
+            src={videoData.url}
+            className={`pointer-events-none transition-opacity duration-1000 ${
+              isVideoLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{ 
+              border: 'none',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '100vw',
+              height: '56.25vw', // 16:9 aspect ratio
+              minHeight: '100vh',
+              minWidth: '177.78vh', // 16:9 aspect ratio
+            }}
+            allow="autoplay; fullscreen; picture-in-picture"
+            onLoad={() => setTimeout(() => setIsVideoLoaded(true), 2000)}
+          />
+        </div>
+        <div className="absolute inset-0 bg-black/60 z-10" />
       </div>
     );
   }
