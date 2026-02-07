@@ -301,80 +301,85 @@ function CheckoutForm({
 
   // Initialize Stripe card element when payment method is card
   useEffect(() => {
-    if (paymentMethod === PAYMENT_METHOD.STRIPE && stripeLoaded) {
-      // Skip if already mounted
-      if (stripeCardElement) {
-        return;
-      }
-
-      // Get publishable key from settings (NO env fallback)
-      fetch('/api/settings')
-        .then(res => res.json())
-        .then(data => {
-          const publishableKey = data.data?.stripePublishableKey;
-          
-          if (!publishableKey || publishableKey.trim() === '' || publishableKey === 'pk_test_dummy') {
-            console.warn('⚠️ Stripe publishable key not configured in settings');
-            setCardError('Stripe is not configured. Please add Stripe keys in Admin Settings > Payment.');
-            return;
-          }
-          
-          // CRITICAL FIX: Store stripe instance globally to reuse
-          if (!(window as any).__STRIPE_INSTANCE__) {
-            (window as any).__STRIPE_INSTANCE__ = (window as any).Stripe(publishableKey);
-          }
-          
-          const stripe = (window as any).__STRIPE_INSTANCE__;
-          
-          // CRITICAL FIX: Reuse elements instance
-          if (!(window as any).__STRIPE_ELEMENTS__) {
-            (window as any).__STRIPE_ELEMENTS__ = stripe.elements();
-          }
-          const elements = (window as any).__STRIPE_ELEMENTS__;
-          
-          // CRITICAL FIX: Clear any existing content before mounting
-          const cardContainer = document.getElementById('card-element');
-          if (cardContainer) {
-            cardContainer.innerHTML = ''; // Clear children
-          }
-          
-          // CRITICAL FIX: Only create card element if not already created
-          if (!(window as any).__STRIPE_CARD_ELEMENT__) {
-            const cardElement = elements.create('card', {
-              style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#424770',
-                  '::placeholder': {
-                    color: '#aab7c4',
-                  },
-                },
-                invalid: {
-                  color: '#9e2146',
-                },
-              },
-            });
-            (window as any).__STRIPE_CARD_ELEMENT__ = cardElement;
-          }
-          
-          const cardElement = (window as any).__STRIPE_CARD_ELEMENT__;
-          cardElement.mount('#card-element');
-          cardElement.on('change', (event: any) => {
-            setCardError(event.error ? event.error.message : '');
-          });
-          setStripeCardElement(cardElement);
-        })
-        .catch(error => {
-          console.error('Failed to load Stripe publishable key:', error);
-          setCardError('Failed to initialize payment form. Please refresh the page.');
-        });
+    if (paymentMethod !== PAYMENT_METHOD.STRIPE || !stripeLoaded) {
+      return;
     }
 
-    // Cleanup - DON'T unmount, just clear state
-    return () => {
-      // Don't unmount the card element, keep it mounted for reuse
+    let mounted = true;
+
+    const initializeStripe = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        const data = await response.json();
+        const publishableKey = data.data?.stripePublishableKey;
+        
+        if (!publishableKey || publishableKey.trim() === '' || publishableKey === 'pk_test_dummy') {
+          if (mounted) {
+            setCardError('Stripe is not configured. Please add Stripe keys in Admin Settings > Payment.');
+          }
+          return;
+        }
+
+        if (!mounted) return;
+
+        const stripe = (window as any).Stripe(publishableKey);
+        const elements = stripe.elements();
+        const cardElement = elements.create('card', {
+          style: {
+            base: {
+              fontSize: '16px',
+              color: '#424770',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              '::placeholder': {
+                color: '#aab7c4',
+              },
+            },
+            invalid: {
+              color: '#ef4444',
+              iconColor: '#ef4444'
+            },
+          },
+          hidePostalCode: true,
+        });
+
+        const container = document.getElementById('card-element');
+        if (container && mounted) {
+          cardElement.mount('#card-element');
+          
+          cardElement.on('change', (event: any) => {
+            if (mounted) {
+              setCardError(event.error ? event.error.message : '');
+            }
+          });
+
+          cardElement.on('ready', () => {
+            if (mounted) {
+              console.log('Card element ready');
+            }
+          });
+
+          setStripeCardElement(cardElement);
+          
+          (window as any).__STRIPE__ = stripe;
+        }
+      } catch (error) {
+        console.error('Stripe initialization error:', error);
+        if (mounted) {
+          setCardError('Failed to initialize payment form. Please refresh the page.');
+        }
+      }
     };
-  }, [paymentMethod, stripeLoaded, stripeCardElement]);
+
+    initializeStripe();
+
+    return () => {
+      mounted = false;
+      if (stripeCardElement) {
+        stripeCardElement.unmount();
+        setStripeCardElement(null);
+      }
+    };
+  }, [paymentMethod, stripeLoaded]);
 
   const checkDeliveryZone = async (zipCode: string) => {
     try {
@@ -423,27 +428,7 @@ const onSubmit = async (data: CheckoutFormData) => {
         throw new Error('Please log in to place an order');
       }
 
-      // Check for duplicate order in last 2 minutes (spam protection only)
-      const checkExistingResponse = await fetch(
-        `/api/orders?restaurantId=${restaurantId}&customerId=${session.user.id}&status=PENDING&limit=1`
-      );
-      const existingData = await checkExistingResponse.json();
-      
-      if (existingData.success && existingData.data?.length > 0) {
-        const existingOrder = existingData.data[0];
-        const orderAge = Date.now() - new Date(existingOrder.createdAt).getTime();
-        
-        // Only prevent if exact duplicate within 2 minutes (spam protection)
-        if (orderAge < 2 * 60 * 1000) {
-          // Check if it's actually a duplicate (same items)
-          const currentCartItemIds = items.map(i => i.menuItemId).sort().join(',');
-          const existingItemIds = existingOrder.orderItems?.map((i: any) => i.menuItemId).sort().join(',');
-          
-          if (currentCartItemIds === existingItemIds) {
-            throw new Error('You just placed this exact order. Please wait 2 minutes before ordering again.');
-          }
-        }
-      }
+      // Remove duplicate check - allow multiple orders
       
       console.log('✅ Starting order creation process...');
       console.log('Restaurant ID:', restaurantId);
@@ -622,37 +607,52 @@ const onSubmit = async (data: CheckoutFormData) => {
         }
 
         // Step 3: Confirm card payment (PRODUCTION MODE)
-        // CRITICAL FIX: Reuse the SAME Stripe instance we used to create the card element
-        const stripe = (window as any).__STRIPE_INSTANCE__;
+        const stripe = (window as any).__STRIPE__;
         
         if (!stripe) {
-          throw new Error('Stripe not initialized. Please refresh the page and try again.');
+          throw new Error('Stripe not initialized. Please refresh the page.');
+        }
+
+        if (!stripeCardElement) {
+          throw new Error('Card details not entered. Please fill in your card information.');
         }
         
-        const { error: confirmError } = await stripe.confirmCardPayment(
+        console.log('Confirming payment with client secret...');
+        
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
           paymentData.data.clientSecret,
           {
             payment_method: {
               card: stripeCardElement,
               billing_details: {
                 name: session.user.name || 'Guest',
-                email: session.user.email,
+                email: session.user.email || '',
               },
             },
           }
         );
 
         if (confirmError) {
-          // Payment failed - order exists but payment failed
-          // This is OK - admin can see it and customer can retry
-          throw new Error(confirmError.message || 'Payment failed');
+          console.error('Payment confirmation error:', confirmError);
+          throw new Error(confirmError.message || 'Payment failed. Please check your card details.');
+        }
+
+        if (paymentIntent?.status !== 'succeeded') {
+          throw new Error('Payment incomplete. Please try again.');
         }
 
         // Payment succeeded!
         console.log('✅ Payment confirmed');
-        toast.success('Payment successful!');
         clearCart();
-        router.push(`/order-tracking/${orderResult.data.id}`);
+        
+        toast.success('Order placed successfully!', {
+          description: `Order #${orderResult.data.orderNumber || orderResult.data.id.slice(0, 8)}`,
+          duration: 5000,
+        });
+        
+        setTimeout(() => {
+          router.push(`/order-tracking/${orderResult.data.id}`);
+        }, 1000);
         return;
       }
 
@@ -661,7 +661,13 @@ const onSubmit = async (data: CheckoutFormData) => {
 
     } catch (error) {
       console.error('❌ CHECKOUT ERROR:', error);
-      toast.error(error instanceof Error ? error.message : 'An error occurred during checkout');
+      
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      
+      toast.error('Order Failed', {
+        description: errorMessage,
+        duration: 6000,
+      });
     } finally {
       setIsSubmitting(false);
     }
