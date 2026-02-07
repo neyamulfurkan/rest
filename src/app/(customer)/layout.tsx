@@ -27,7 +27,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
       <Header onCartOpen={handleOpenCart} />
 
       {/* Main Content - Add top padding to account for fixed header */}
-      <main className="min-h-screen w-full overflow-x-hidden" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
+      <main className="min-h-screen w-full overflow-x-hidden pt-16 md:pt-20" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
         {children}
       </main>
 

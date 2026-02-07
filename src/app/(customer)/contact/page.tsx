@@ -82,7 +82,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-12" style={{ backgroundColor: 'hsl(var(--page-bg))', minHeight: '100vh' }}>
+    <div className="container mx-auto max-w-6xl px-4 py-12" style={{ backgroundColor: 'hsl(var(--page-bg))', minHeight: 'calc(100vh - 5rem)' }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

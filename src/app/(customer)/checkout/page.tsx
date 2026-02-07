@@ -301,7 +301,12 @@ function CheckoutForm({
 
   // Initialize Stripe card element when payment method is card
   useEffect(() => {
-    if (paymentMethod === PAYMENT_METHOD.STRIPE && stripeLoaded && !stripeCardElement) {
+    if (paymentMethod === PAYMENT_METHOD.STRIPE && stripeLoaded) {
+      // Skip if already mounted
+      if (stripeCardElement) {
+        return;
+      }
+
       // Get publishable key from settings (NO env fallback)
       fetch('/api/settings')
         .then(res => res.json())
@@ -320,7 +325,12 @@ function CheckoutForm({
           }
           
           const stripe = (window as any).__STRIPE_INSTANCE__;
-          const elements = stripe.elements();
+          
+          // CRITICAL FIX: Reuse elements instance
+          if (!(window as any).__STRIPE_ELEMENTS__) {
+            (window as any).__STRIPE_ELEMENTS__ = stripe.elements();
+          }
+          const elements = (window as any).__STRIPE_ELEMENTS__;
           
           // CRITICAL FIX: Clear any existing content before mounting
           const cardContainer = document.getElementById('card-element');
@@ -328,20 +338,26 @@ function CheckoutForm({
             cardContainer.innerHTML = ''; // Clear children
           }
           
-          const cardElement = elements.create('card', {
-            style: {
-              base: {
-                fontSize: '16px',
-                color: '#424770',
-                '::placeholder': {
-                  color: '#aab7c4',
+          // CRITICAL FIX: Only create card element if not already created
+          if (!(window as any).__STRIPE_CARD_ELEMENT__) {
+            const cardElement = elements.create('card', {
+              style: {
+                base: {
+                  fontSize: '16px',
+                  color: '#424770',
+                  '::placeholder': {
+                    color: '#aab7c4',
+                  },
+                },
+                invalid: {
+                  color: '#9e2146',
                 },
               },
-              invalid: {
-                color: '#9e2146',
-              },
-            },
-          });
+            });
+            (window as any).__STRIPE_CARD_ELEMENT__ = cardElement;
+          }
+          
+          const cardElement = (window as any).__STRIPE_CARD_ELEMENT__;
           cardElement.mount('#card-element');
           cardElement.on('change', (event: any) => {
             setCardError(event.error ? event.error.message : '');
@@ -354,14 +370,11 @@ function CheckoutForm({
         });
     }
 
-    // Cleanup
+    // Cleanup - DON'T unmount, just clear state
     return () => {
-      if (stripeCardElement) {
-        stripeCardElement.unmount();
-        setStripeCardElement(null);
-      }
+      // Don't unmount the card element, keep it mounted for reuse
     };
-  }, [paymentMethod, stripeLoaded]);
+  }, [paymentMethod, stripeLoaded, stripeCardElement]);
 
   const checkDeliveryZone = async (zipCode: string) => {
     try {
