@@ -423,9 +423,17 @@ function HeroMedia() {
             muted
             loop
             playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+            className={`absolute inset-0 w-full h-full transition-opacity duration-700 ${
               isVideoLoaded ? 'opacity-100' : 'opacity-0'
             }`}
+            style={{
+              width: '100vw',
+              height: '100vh',
+              objectFit: 'cover',
+              position: 'absolute',
+              top: 0,
+              left: 0
+            }}
             onCanPlayThrough={() => setIsVideoLoaded(true)}
           >
             <source src={videoData.url} type="video/mp4" />
@@ -463,7 +471,13 @@ function HeroMedia() {
           className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-1000 ${
             isVideoLoaded ? 'opacity-100' : 'opacity-0'
           }`}
-          style={{ border: 'none', transform: 'scale(1.2)' }}
+          style={{ 
+            border: 'none',
+            width: '100vw',
+            height: '100vh',
+            objectFit: 'cover',
+            transform: 'scale(1.01)'
+          }}
           allow="autoplay; fullscreen"
           onLoad={() => setTimeout(() => setIsVideoLoaded(true), 2000)}
         />
