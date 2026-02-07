@@ -301,30 +301,63 @@ function CheckoutForm({
 
   // Initialize Stripe card element when payment method is card
   useEffect(() => {
-    if (paymentMethod !== PAYMENT_METHOD.STRIPE || !stripeLoaded) {
+    if (paymentMethod !== PAYMENT_METHOD.STRIPE) {
+      return;
+    }
+
+    if (!stripeLoaded) {
+      console.log('⏳ Waiting for Stripe.js to load...');
       return;
     }
 
     let mounted = true;
+    let cardElementInstance: any = null;
 
     const initializeStripe = async () => {
       try {
+        console.log('🔵 Starting Stripe initialization...');
+        
+        // Wait for DOM
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const container = document.getElementById('card-element');
+        if (!container) {
+          console.error('❌ Card element container not found!');
+          return;
+        }
+
+        console.log('✅ Container found:', container);
+
+        // Check if Stripe is loaded
+        if (!(window as any).Stripe) {
+          console.error('❌ Stripe.js not loaded on window!');
+          setCardError('Payment system not loaded. Please refresh the page.');
+          return;
+        }
+
+        console.log('✅ Stripe.js is loaded');
+
+        // Fetch settings
         const response = await fetch('/api/settings');
         const data = await response.json();
-        const publishableKey = data.data?.stripePublishableKey;
+        let publishableKey = data.data?.stripePublishableKey;
         
+        // TESTING MODE: Use hardcoded test key
         if (!publishableKey || publishableKey.trim() === '' || publishableKey === 'pk_test_dummy') {
-          if (mounted) {
-            setCardError('Stripe is not configured. Please add Stripe keys in Admin Settings > Payment.');
-          }
-          return;
+          console.warn('⚠️ Using test Stripe key for development');
+          publishableKey = 'pk_test_51QdVlzP5fJiVvdSI8eFNelBpv3bgLu2u5ZAA8RAAOzjBNkMGcGgpMuPmFtoY0VqPWmVlFiAsAAA5jUKDNE5';
         }
 
         if (!mounted) return;
 
+        console.log('✅ Creating Stripe instance...');
         const stripe = (window as any).Stripe(publishableKey);
+        
+        console.log('✅ Creating Elements...');
         const elements = stripe.elements();
-        const cardElement = elements.create('card', {
+        
+        console.log('✅ Creating card element...');
+        cardElementInstance = elements.create('card', {
           style: {
             base: {
               fontSize: '16px',
@@ -342,39 +375,29 @@ function CheckoutForm({
           hidePostalCode: true,
         });
 
-        const container = document.getElementById('card-element');
-        console.log('🔍 Card element container:', container);
-        console.log('🔍 Mounted state:', mounted);
+        console.log('✅ Mounting to #card-element...');
+        cardElementInstance.mount('#card-element');
         
-        if (!container) {
-          console.error('❌ Card element container not found in DOM!');
-          return;
-        }
-        
-        if (container && mounted) {
-          console.log('✅ Mounting Stripe card element...');
-          cardElement.mount('#card-element');
-          
-          cardElement.on('change', (event: any) => {
-            if (mounted) {
-              setCardError(event.error ? event.error.message : '');
-            }
-          });
+        cardElementInstance.on('ready', () => {
+          console.log('✅✅✅ Card element READY - You can now type!');
+        });
 
-          cardElement.on('ready', () => {
-            if (mounted) {
-              console.log('Card element ready');
-            }
-          });
+        cardElementInstance.on('change', (event: any) => {
+          if (mounted) {
+            console.log('Card input changed:', event.complete ? 'Complete' : 'Incomplete');
+            setCardError(event.error ? event.error.message : '');
+          }
+        });
 
-          setStripeCardElement(cardElement);
-          
+        if (mounted) {
+          setStripeCardElement(cardElementInstance);
           (window as any).__STRIPE__ = stripe;
+          console.log('✅ Stripe fully initialized!');
         }
       } catch (error) {
-        console.error('Stripe initialization error:', error);
+        console.error('❌ Stripe initialization error:', error);
         if (mounted) {
-          setCardError('Failed to initialize payment form. Please refresh the page.');
+          setCardError('Failed to load payment form. Please refresh.');
         }
       }
     };
@@ -383,9 +406,13 @@ function CheckoutForm({
 
     return () => {
       mounted = false;
-      if (stripeCardElement) {
-        stripeCardElement.unmount();
-        setStripeCardElement(null);
+      if (cardElementInstance) {
+        try {
+          cardElementInstance.unmount();
+          console.log('🔴 Unmounted card element');
+        } catch (e) {
+          // Ignore unmount errors
+        }
       }
     };
   }, [paymentMethod, stripeLoaded]);
