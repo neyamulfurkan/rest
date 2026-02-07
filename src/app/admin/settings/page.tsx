@@ -3080,7 +3080,13 @@ export default function AdminSettingsPage() {
                     />
                     <textarea
                       value={settings.aboutStory || ''}
-                      onChange={(e) => updateSetting('aboutStory', e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Prevent console output from being saved
+                        if (!value.includes('console.log') && !value.includes('page.tsx') && !value.includes('🔵')) {
+                          updateSetting('aboutStory', value);
+                        }
+                      }}
                       rows={4}
                       className="w-full px-3 py-2 rounded-lg border resize-none text-sm"
                       style={{
@@ -3109,7 +3115,13 @@ export default function AdminSettingsPage() {
                     />
                     <textarea
                       value={settings.aboutMission || ''}
-                      onChange={(e) => updateSetting('aboutMission', e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Prevent console output from being saved
+                        if (!value.includes('console.log') && !value.includes('page.tsx') && !value.includes('🔵')) {
+                          updateSetting('aboutMission', value);
+                        }
+                      }}
                       rows={4}
                       className="w-full px-3 py-2 rounded-lg border resize-none text-sm"
                       style={{
@@ -3138,7 +3150,13 @@ export default function AdminSettingsPage() {
                     />
                     <textarea
                       value={settings.aboutValues || ''}
-                      onChange={(e) => updateSetting('aboutValues', e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Prevent console output from being saved
+                        if (!value.includes('console.log') && !value.includes('page.tsx') && !value.includes('🔵')) {
+                          updateSetting('aboutValues', value);
+                        }
+                      }}
                       rows={4}
                       className="w-full px-3 py-2 rounded-lg border resize-none text-sm"
                       style={{

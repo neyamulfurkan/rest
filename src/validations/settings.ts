@@ -9,26 +9,49 @@ export const galleryItemSchema = z.object({
 }).passthrough();
 
 export const aboutContentSchema = z.object({
-  story: z.string().optional(),
-  mission: z.string().optional(),
-  values: z.string().optional(),
+  story: z.string().optional().nullable(),
+  mission: z.string().optional().nullable(),
+  values: z.string().optional().nullable(),
 });
 
 export const settingsSchema = z.object({
   // Gallery & About
   galleryImages: z.union([z.array(galleryItemSchema), z.string()]).optional().nullable().transform((val) => {
     if (typeof val === 'string') {
+      // Filter out console.log contaminated strings
+      if (val.includes('console.log') || val.includes('page.tsx') || val.includes('🔵')) {
+        return [];
+      }
       try {
-        return JSON.parse(val);
+        const parsed = JSON.parse(val);
+        // Validate parsed array items
+        if (Array.isArray(parsed)) {
+          return parsed.filter(item => 
+            item && 
+            typeof item === 'object' && 
+            item.url && 
+            !item.caption?.includes('console.log')
+          );
+        }
+        return [];
       } catch {
         return [];
       }
     }
-    return val;
+    return val || [];
   }),
-  aboutStory: z.string().optional().nullable(),
-  aboutMission: z.string().optional().nullable(),
-  aboutValues: z.string().optional().nullable(),
+  aboutStory: z.string().optional().nullable().transform(val => {
+    if (!val || val.includes('console.log') || val.includes('page.tsx') || val.includes('🔵')) return null;
+    return val.trim() || null;
+  }),
+  aboutMission: z.string().optional().nullable().transform(val => {
+    if (!val || val.includes('console.log') || val.includes('page.tsx') || val.includes('🔵')) return null;
+    return val.trim() || null;
+  }),
+  aboutValues: z.string().optional().nullable().transform(val => {
+    if (!val || val.includes('console.log') || val.includes('page.tsx') || val.includes('🔵')) return null;
+    return val.trim() || null;
+  }),
   
   // Existing fields
   restaurantName: z.string().min(1).optional(),
