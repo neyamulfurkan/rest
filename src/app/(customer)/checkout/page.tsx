@@ -226,6 +226,7 @@ function CheckoutForm({
   const [stripeCardElement, setStripeCardElement] = useState<any>(null);
   const [stripeLoaded, setStripeLoaded] = useState(false);
   const [cardError, setCardError] = useState<string>('');
+  const [stripeInstance, setStripeInstance] = useState<any>(null);
 
   const {
     register,
@@ -299,44 +300,35 @@ function CheckoutForm({
     }
   }, [deliveryZipCode, orderType]);
 
-  // Initialize Stripe card element when payment method is card
+// Initialize Stripe ONCE on mount - wait for visible element
   useEffect(() => {
-    if (paymentMethod !== PAYMENT_METHOD.STRIPE) {
-      return;
-    }
-
-    if (!stripeLoaded) {
-      console.log('⏳ Waiting for Stripe.js to load...');
-      return;
-    }
-
-    let mounted = true;
-    let cardElementInstance: any = null;
+    if (!stripeLoaded || stripeInstance || !isMounted) return;
 
     const initializeStripe = async () => {
       try {
-        console.log('🔵 Starting Stripe initialization...');
+        console.log('🔵 Initializing Stripe (one-time)...');
         
-        // Wait for DOM
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for element to exist AND be visible
+        let container: HTMLElement | null = null;
+        let attempts = 0;
         
-        const container = document.getElementById('card-element');
-        if (!container) {
-          console.error('❌ Card element container not found!');
+        while (attempts < 20) {
+          container = document.getElementById('card-element');
+          if (container && container.offsetParent !== null) {
+            // Element exists and is visible
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        if (!container || container.offsetParent === null) {
+          console.error('❌ Card element not visible after 2 seconds!');
           return;
         }
-
-        console.log('✅ Container found:', container);
-
-        // Check if Stripe is loaded
-        if (!(window as any).Stripe) {
-          console.error('❌ Stripe.js not loaded on window!');
-          setCardError('Payment system not loaded. Please refresh the page.');
-          return;
-        }
-
-        console.log('✅ Stripe.js is loaded');
-
+        
+        console.log('✅ Card element found and visible after', attempts * 100, 'ms');
+        
         // Fetch settings
         const response = await fetch('/api/settings');
         const data = await response.json();
@@ -348,16 +340,12 @@ function CheckoutForm({
           publishableKey = 'pk_test_51QdVlzP5fJiVvdSI8eFNelBpv3bgLu2u5ZAA8RAAOzjBNkMGcGgpMuPmFtoY0VqPWmVlFiAsAAA5jUKDNE5';
         }
 
-        if (!mounted) return;
-
-        console.log('✅ Creating Stripe instance...');
         const stripe = (window as any).Stripe(publishableKey);
+        setStripeInstance(stripe);
         
-        console.log('✅ Creating Elements...');
         const elements = stripe.elements();
-        
-        console.log('✅ Creating card element...');
-        cardElementInstance = elements.create('card', {
+        const cardElement = elements.create('card', {
+          hidePostalCode: false,
           style: {
             base: {
               fontSize: '16px',
@@ -372,50 +360,40 @@ function CheckoutForm({
               iconColor: '#ef4444'
             },
           },
-          hidePostalCode: true,
         });
 
-        console.log('✅ Mounting to #card-element...');
-        cardElementInstance.mount('#card-element');
+        cardElement.mount('#card-element');
         
-        cardElementInstance.on('ready', () => {
-          console.log('✅✅✅ Card element READY - You can now type!');
+        cardElement.on('ready', () => {
+          console.log('✅ Card element READY');
         });
 
-        cardElementInstance.on('change', (event: any) => {
-          if (mounted) {
-            console.log('Card input changed:', event.complete ? 'Complete' : 'Incomplete');
-            setCardError(event.error ? event.error.message : '');
-          }
+        cardElement.on('change', (event: any) => {
+          setCardError(event.error ? event.error.message : '');
         });
 
-        if (mounted) {
-          setStripeCardElement(cardElementInstance);
-          (window as any).__STRIPE__ = stripe;
-          console.log('✅ Stripe fully initialized!');
-        }
+        setStripeCardElement(cardElement);
+        console.log('✅ Stripe fully initialized!');
       } catch (error) {
         console.error('❌ Stripe initialization error:', error);
-        if (mounted) {
-          setCardError('Failed to load payment form. Please refresh.');
-        }
+        setCardError('Failed to load payment form. Please refresh.');
       }
     };
 
     initializeStripe();
 
+    // Cleanup on unmount
     return () => {
-      mounted = false;
-      if (cardElementInstance) {
+      if (stripeCardElement) {
         try {
-          cardElementInstance.unmount();
-          console.log('🔴 Unmounted card element');
+          stripeCardElement.unmount();
+          console.log('🧹 Stripe card element unmounted');
         } catch (e) {
-          // Ignore unmount errors
+          console.warn('Unmount error (safe to ignore):', e);
         }
       }
     };
-  }, [paymentMethod, stripeLoaded]);
+  }, [stripeLoaded, stripeInstance, isMounted]);
 
   const checkDeliveryZone = async (zipCode: string) => {
     try {
@@ -502,7 +480,7 @@ const onSubmit = async (data: CheckoutFormData) => {
             city: data.deliveryCity!,
             state: data.deliveryState!,
             zipCode: data.deliveryZipCode!,
-            country: data.deliveryCountry,
+            country: data.deliveryCountry || 'US',
           }
         }),
       };
@@ -643,9 +621,7 @@ const onSubmit = async (data: CheckoutFormData) => {
         }
 
         // Step 3: Confirm card payment (PRODUCTION MODE)
-        const stripe = (window as any).__STRIPE__;
-        
-        if (!stripe) {
+        if (!stripeInstance) {
           throw new Error('Stripe not initialized. Please refresh the page.');
         }
 
@@ -655,7 +631,7 @@ const onSubmit = async (data: CheckoutFormData) => {
         
         console.log('Confirming payment with client secret...');
         
-        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+        const { error: confirmError, paymentIntent } = await stripeInstance.confirmCardPayment(
           paymentData.data.clientSecret,
           {
             payment_method: {
@@ -715,10 +691,13 @@ return (
         src="https://js.stripe.com/v3/"
         onLoad={() => {
           console.log('✅✅✅ Stripe.js loaded!');
-          setStripeLoaded(true);
+          // Force state update to trigger useEffect
+          setTimeout(() => {
+            setStripeLoaded(true);
+          }, 0);
         }}
         onError={(e) => console.error('❌ Stripe.js failed to load:', e)}
-        strategy="lazyOnload"
+        strategy="afterInteractive"
       />
       
       <form
@@ -950,33 +929,40 @@ return (
           ))}
         </div>
 
-        {/* Stripe Card Input */}
-        {paymentMethod === PAYMENT_METHOD.STRIPE && (
-          <div className="mt-6 space-y-4">
-            <div className="rounded-lg border-2 border-neutral-200 p-4">
-              <label className="block text-sm font-medium text-neutral-700 mb-3">
-                Card Details
-              </label>
-              <div 
-                id="card-element" 
-                className="p-3 border border-neutral-300 rounded-lg bg-white min-h-[40px]"
-              ></div>
-              {cardError && (
-                <p className="text-sm text-error-500 mt-2">{cardError}</p>
-              )}
-              {!stripeCardElement && !cardError && stripeLoaded && (
-                <p className="text-sm text-neutral-400 mt-2">Loading card form...</p>
-              )}
-            </div>
-            <div className="flex items-center gap-2 text-xs text-neutral-500">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              <span>Your payment is secured by Stripe</span>
-            </div>
+        </div>
+
+      {/* Stripe Card Input - Only visible when Stripe is selected */}
+      {paymentMethod === PAYMENT_METHOD.STRIPE && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.3 }}
+          className="bg-white rounded-2xl shadow-md p-6 space-y-4"
+        >
+          <div className="rounded-lg border-2 border-neutral-200 p-4">
+            <label className="block text-sm font-medium text-neutral-700 mb-3">
+              Card Details
+            </label>
+            <div 
+              id="card-element" 
+              className="p-3 border border-neutral-300 rounded-lg bg-white min-h-[40px]"
+            ></div>
+            {cardError && (
+              <p className="text-sm text-error-500 mt-2">{cardError}</p>
+            )}
+            {!stripeCardElement && !cardError && stripeLoaded && (
+              <p className="text-sm text-neutral-400 mt-2">Loading card form...</p>
+            )}
           </div>
-        )}
-      </div>
+          <div className="flex items-center gap-2 text-xs text-neutral-500">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span>Your payment is secured by Stripe</span>
+          </div>
+        </motion.div>
+      )}
 
       {/* Tip Selection */}
       <div className="bg-white rounded-2xl shadow-md p-6">
