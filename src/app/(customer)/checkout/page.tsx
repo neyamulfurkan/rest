@@ -344,6 +344,11 @@ function CheckoutForm({
         setStripeInstance(stripe);
         
         const elements = stripe.elements();
+        
+        // CRITICAL FIX: Force container height BEFORE mounting
+        container.style.minHeight = '50px';
+        container.style.height = 'auto';
+        
         const cardElement = elements.create('card', {
           hidePostalCode: false,
           style: {
@@ -351,6 +356,7 @@ function CheckoutForm({
               fontSize: '16px',
               color: '#424770',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              lineHeight: '24px',
               '::placeholder': {
                 color: '#aab7c4',
               },
@@ -362,10 +368,17 @@ function CheckoutForm({
           },
         });
 
+        // Mount with a small delay to ensure container is sized
+        await new Promise(resolve => setTimeout(resolve, 50));
         cardElement.mount('#card-element');
         
         cardElement.on('ready', () => {
           console.log('✅ Card element READY');
+          // Force resize after mount
+          const iframe = container?.querySelector('iframe');
+          if (iframe && iframe instanceof HTMLElement) {
+            iframe.style.height = '40px';
+          }
         });
 
         cardElement.on('change', (event: any) => {
