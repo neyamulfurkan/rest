@@ -224,9 +224,18 @@ function CheckoutForm({
   const [estimatedDeliveryTime, setEstimatedDeliveryTime] = useState('');
   const [isAddressValid, setIsAddressValid] = useState(false);
   const [stripeCardElement, setStripeCardElement] = useState<any>(null);
-  const [stripeLoaded, setStripeLoaded] = useState(false);
+    const [stripeLoaded, setStripeLoaded] = useState(false);
+  
+  // Check if Stripe is already loaded on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).Stripe) {
+      console.log('✅ Stripe already loaded from previous navigation');
+      setStripeLoaded(true);
+    }
+  }, []);
   const [cardError, setCardError] = useState<string>('');
   const [stripeInstance, setStripeInstance] = useState<any>(null);
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
 
   const {
     register,
@@ -300,56 +309,86 @@ function CheckoutForm({
     }
   }, [deliveryZipCode, orderType]);
 
-// Initialize Stripe ONCE on mount - wait for visible element
+// Initialize Stripe - Force fresh mount on every render
   useEffect(() => {
-    if (!stripeLoaded || stripeInstance || !isMounted) return;
+    if (!stripeLoaded || !isMounted) return;
+    
+    // CRITICAL: Only initialize if Stripe is selected
+    if (paymentMethod !== PAYMENT_METHOD.STRIPE) {
+      console.log('⏭️ Skipping Stripe init - different payment method selected');
+      return;
+    }
+
+    let isCancelled = false;
+    let cardElement: any = null;
 
     const initializeStripe = async () => {
       try {
-        console.log('🔵 Initializing Stripe (one-time)...');
+        console.log('🔵 Starting Stripe initialization...');
         
-        // Wait for element to exist AND be visible
+        // STEP 1: Force destroy any existing instance
+        if (stripeCardElement) {
+          try {
+            stripeCardElement.destroy();
+            console.log('🧹 Destroyed old card element');
+          } catch (e) {
+            console.warn('Destroy error (safe):', e);
+          }
+          setStripeCardElement(null);
+        }
+
+        if (isCancelled) return;
+        
+        // STEP 2: Wait for DOM element (with timeout)
         let container: HTMLElement | null = null;
         let attempts = 0;
         
-        while (attempts < 20) {
+        while (attempts < 30) {
           container = document.getElementById('card-element');
           if (container && container.offsetParent !== null) {
-            // Element exists and is visible
             break;
           }
           await new Promise(resolve => setTimeout(resolve, 100));
           attempts++;
+          if (isCancelled) return;
         }
         
         if (!container || container.offsetParent === null) {
-          console.error('❌ Card element not visible after 2 seconds!');
+          console.error('❌ Card element not found after 3 seconds');
+          setCardError('Payment form failed to load. Please refresh the page.');
           return;
         }
         
-        console.log('✅ Card element found and visible after', attempts * 100, 'ms');
+        console.log('✅ Card element found');
+
+        if (isCancelled) return;
         
-        // Fetch settings
+        // STEP 3: Fetch settings
         const response = await fetch('/api/settings');
         const data = await response.json();
         let publishableKey = data.data?.stripePublishableKey;
         
-        // TESTING MODE: Use hardcoded test key
+        // Use test key if not configured
         if (!publishableKey || publishableKey.trim() === '' || publishableKey === 'pk_test_dummy') {
-          console.warn('⚠️ Using test Stripe key for development');
+          console.warn('⚠️ Using test Stripe key');
           publishableKey = 'pk_test_51QdVlzP5fJiVvdSI8eFNelBpv3bgLu2u5ZAA8RAAOzjBNkMGcGgpMuPmFtoY0VqPWmVlFiAsAAA5jUKDNE5';
         }
 
+        if (isCancelled) return;
+
+        // STEP 4: Create NEW Stripe instance (always fresh)
         const stripe = (window as any).Stripe(publishableKey);
         setStripeInstance(stripe);
         
+        // STEP 5: Create elements
         const elements = stripe.elements();
         
-        // CRITICAL FIX: Force container height BEFORE mounting
+        // Force container sizing
         container.style.minHeight = '50px';
         container.style.height = 'auto';
         
-        const cardElement = elements.create('card', {
+        // STEP 6: Create and mount card element
+        cardElement = elements.create('card', {
           hidePostalCode: false,
           style: {
             base: {
@@ -357,9 +396,7 @@ function CheckoutForm({
               color: '#424770',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               lineHeight: '24px',
-              '::placeholder': {
-                color: '#aab7c4',
-              },
+              '::placeholder': { color: '#aab7c4' },
             },
             invalid: {
               color: '#ef4444',
@@ -368,17 +405,16 @@ function CheckoutForm({
           },
         });
 
-        // Mount with a small delay to ensure container is sized
+        if (isCancelled) {
+          cardElement.destroy();
+          return;
+        }
+
         await new Promise(resolve => setTimeout(resolve, 50));
         cardElement.mount('#card-element');
         
         cardElement.on('ready', () => {
           console.log('✅ Card element READY');
-          // Force resize after mount
-          const iframe = container?.querySelector('iframe');
-          if (iframe && iframe instanceof HTMLElement) {
-            iframe.style.height = '40px';
-          }
         });
 
         cardElement.on('change', (event: any) => {
@@ -387,26 +423,35 @@ function CheckoutForm({
 
         setStripeCardElement(cardElement);
         console.log('✅ Stripe fully initialized!');
+        
       } catch (error) {
-        console.error('❌ Stripe initialization error:', error);
-        setCardError('Failed to load payment form. Please refresh.');
+        if (!isCancelled) {
+          console.error('❌ Stripe initialization error:', error);
+          setCardError('Failed to load payment form. Please refresh the page.');
+        }
       }
     };
 
     initializeStripe();
 
-    // Cleanup on unmount
+    // Cleanup
     return () => {
-      if (stripeCardElement) {
+      console.log('🧹 Cleaning up Stripe...');
+      isCancelled = true;
+      
+      if (cardElement) {
         try {
-          stripeCardElement.unmount();
-          console.log('🧹 Stripe card element unmounted');
+          cardElement.destroy();
         } catch (e) {
-          console.warn('Unmount error (safe to ignore):', e);
+          console.warn('Cleanup error (safe):', e);
         }
       }
+      
+      setStripeCardElement(null);
+      setStripeInstance(null);
+      setCardError('');
     };
-  }, [stripeLoaded, stripeInstance, isMounted]);
+  }, [stripeLoaded, isMounted, paymentMethod]); // Re-init when payment method changes
 
   const checkDeliveryZone = async (zipCode: string) => {
     try {
@@ -952,8 +997,13 @@ return (
               Card Details
             </label>
             <div 
-              id="card-element" 
-              className="p-3 border border-neutral-300 rounded-lg bg-white min-h-[40px]"
+              id="card-element"
+              style={{
+                minHeight: '50px',
+                display: 'block',
+                visibility: 'visible',
+              }}
+              className="p-3 border border-neutral-300 rounded-lg bg-white"
             ></div>
             {cardError && (
               <p className="text-sm text-error-500 mt-2">{cardError}</p>

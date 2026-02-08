@@ -152,7 +152,7 @@ const withPWA = require('next-pwa')({
 });
 
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false, // Disabled to prevent Stripe double-mounting issues
   
   // Image optimization configuration
   images: {
