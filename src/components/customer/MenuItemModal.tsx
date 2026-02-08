@@ -140,7 +140,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0 sm:max-w-2xl w-[calc(100vw-2rem)] sm:w-full z-50">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0 sm:max-w-2xl w-[calc(100vw-2rem)] sm:w-full z-[10000]">
         {/* Header with manual close button for mobile */}
         <div className="absolute top-3 right-3 z-50">
           <Button

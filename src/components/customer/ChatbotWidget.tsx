@@ -85,6 +85,14 @@ export default function ChatbotWidget({ restaurantId }: ChatbotWidgetProps) {
         document.body.style.width = '100%';
       }
       
+      // Lower chatbot z-index when modal is open
+      if (isMenuModalOpen) {
+        const chatWindow = document.querySelector('[data-chatbot-window]');
+        if (chatWindow instanceof HTMLElement) {
+          chatWindow.style.zIndex = '40';
+        }
+      }
+      
       // Focus input
       if (inputRef.current) {
         setTimeout(() => {
@@ -103,8 +111,14 @@ export default function ChatbotWidget({ restaurantId }: ChatbotWidgetProps) {
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
+      
+      // Restore chatbot z-index
+      const chatWindow = document.querySelector('[data-chatbot-window]');
+      if (chatWindow instanceof HTMLElement) {
+        chatWindow.style.zIndex = '9999';
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, isMenuModalOpen]);
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
@@ -215,11 +229,23 @@ export default function ChatbotWidget({ restaurantId }: ChatbotWidgetProps) {
   }, [handleSendMessage]);
 
   const handleMenuItemClick = useCallback((item: MenuItemWithRelations) => {
+    // Lower chatbot z-index when opening modal
+    const chatWindow = document.querySelector('[data-chatbot-window]');
+    if (chatWindow instanceof HTMLElement) {
+      chatWindow.style.zIndex = '40';
+    }
+    
     setSelectedMenuItem(item);
     setIsMenuModalOpen(true);
   }, []);
 
   const handleMenuModalClose = useCallback(() => {
+    // Restore chatbot z-index when modal closes
+    const chatWindow = document.querySelector('[data-chatbot-window]');
+    if (chatWindow instanceof HTMLElement) {
+      chatWindow.style.zIndex = '9999';
+    }
+    
     setIsMenuModalOpen(false);
     setSelectedMenuItem(null);
   }, []);
@@ -537,6 +563,7 @@ END:VCALENDAR`;
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            data-chatbot-window
             className={cn(
               'fixed z-[9999]',
               // Mobile: fullscreen
