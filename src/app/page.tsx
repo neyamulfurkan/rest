@@ -1,7 +1,6 @@
-// src/app/page.tsx
+'use client';
 
 import type { Metadata } from 'next';
-
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -180,8 +179,6 @@ export default async function HomePage() {
     </>
   );
 }
-
-'use client';
 
 // Client Component for interactivity
 function HomePageClient({ restaurantName, settings, content }: { restaurantName: string; settings: any; content: any }) {

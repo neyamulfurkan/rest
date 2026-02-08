@@ -1,3 +1,5 @@
+'use client';
+
 import type { Metadata } from 'next';
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -178,8 +180,6 @@ export default async function MenuPage() {
     </>
   );
 }
-
-'use client';
 
 // Client Component for interactivity
 function MenuPageClient({ 

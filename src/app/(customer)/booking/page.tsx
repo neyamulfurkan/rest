@@ -1,7 +1,6 @@
-// src/app/(customer)/booking/page.tsx
+'use client';
 
 import type { Metadata } from 'next';
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -189,8 +188,6 @@ export default async function BookingPage() {
     </>
   );
 }
-
-'use client';
 
 // Client Component for interactivity
 function BookingPageClient({ restaurantName, city, state }: { restaurantName: string; city: string; state: string }) {
