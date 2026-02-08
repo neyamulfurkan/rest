@@ -1,5 +1,3 @@
-'use client';
-
 import type { Metadata } from 'next';
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -193,6 +191,7 @@ function MenuPageClient({
   initialMenuItems: any[]; 
   initialCategories: any[] 
 }) {
+  'use client';
   const { menuItems: clientMenuItems, categories: clientCategories, isLoading, error } = useMenu();
   // Use server-side data initially, then client-side data
   const menuItems = clientMenuItems || initialMenuItems;
