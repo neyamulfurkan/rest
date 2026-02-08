@@ -414,3 +414,63 @@
     object-fit: cover;
   }
 }
+/* Chatbot Mobile Optimization */
+@layer utilities {
+  /* Prevent body scroll when chatbot is open on mobile */
+  .chatbot-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Safe area for mobile devices with notches */
+  @supports (padding: max(0px)) {
+    .chatbot-container {
+      padding-top: max(1rem, env(safe-area-inset-top));
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+      padding-left: max(1rem, env(safe-area-inset-left));
+      padding-right: max(1rem, env(safe-area-inset-right));
+    }
+  }
+  
+  /* Smooth scrolling for chatbot messages */
+  .chatbot-messages {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* Gentle pulse animation for chatbot button */
+  @keyframes gentle-pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 4px 14px 0 hsla(var(--primary), 0.5);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px 0 hsla(var(--primary), 0.7);
+    }
+  }
+  
+  .gentle-pulse {
+    animation: gentle-pulse 2s ease-in-out infinite;
+  }
+}
+
+/* Mobile viewport height fix for chatbot */
+@supports (-webkit-touch-callout: none) {
+  .chatbot-mobile-height {
+    height: -webkit-fill-available;
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Ensure chatbot is always on top on mobile */
+@media (max-width: 640px) {
+  .chatbot-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background-color: hsl(var(--card));
+  }
+}

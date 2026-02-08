@@ -157,7 +157,7 @@ export default function MenuPage() {
   const shouldBeTransparent = branding.headerTransparentOverMedia && !isScrolled;
 
   return (
-    <div className="min-h-screen pt-16 md:pt-20" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
       {/* Search & Filter Bar - Sticky - COMPACT */}
       <div 
         className={cn(
@@ -335,7 +335,7 @@ export default function MenuPage() {
       </div>
 
       {/* Recommended Items */}
-      <div className="mt-[180px] md:mt-[140px]">
+      <div className="pt-[90px] sm:pt-[95px] md:pt-[85px]">
         {restaurantId && (
           <RecommendedItems
             restaurantId={restaurantId}
@@ -345,7 +345,7 @@ export default function MenuPage() {
       </div>
 
       {/* Menu Grid */}
-      <div className="container mx-auto px-4 pb-4 max-w-7xl">
+      <div className="container mx-auto px-4 pb-8 max-w-7xl">
         {filteredAndSortedItems.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-neutral-500 text-lg">No items found</p>

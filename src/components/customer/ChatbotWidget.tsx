@@ -75,13 +75,35 @@ export default function ChatbotWidget({ restaurantId }: ChatbotWidgetProps) {
     }
   }, [messages]);
 
-  // Focus input when chat opens
+  // Focus input when chat opens & prevent body scroll on mobile
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
+    if (isOpen) {
+      // Prevent body scroll on mobile
+      if (window.innerWidth < 640) {
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+      }
+      
+      // Focus input
+      if (inputRef.current) {
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+      }
+    } else {
+      // Restore body scroll
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
     }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
   }, [isOpen]);
 
   // Save messages to localStorage whenever they change
@@ -516,11 +538,17 @@ END:VCALENDAR`;
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className={cn(
-              'fixed bottom-6 right-6 z-50',
-              'w-[400px] h-[600px]',
-              'rounded-2xl shadow-2xl',
+              'fixed z-[9999]',
+              // Mobile: fullscreen
+              'inset-0 w-full h-full',
+              // Desktop: floating bottom-right
+              'sm:inset-auto sm:bottom-4 sm:right-4 sm:w-[400px] sm:h-[600px] sm:max-h-[calc(100vh-2rem)]',
+              'md:bottom-6 md:right-6 md:w-[420px] md:h-[650px] md:max-h-[calc(100vh-3rem)]',
+              'lg:w-[440px] lg:h-[680px]',
+              // Mobile: no border radius, Desktop: rounded
+              'sm:rounded-2xl shadow-2xl',
               'flex flex-col overflow-hidden',
-              'border'
+              'sm:border border-0'
             )}
             style={{
               backgroundColor: 'hsl(var(--card))',
@@ -530,9 +558,10 @@ END:VCALENDAR`;
             {/* Chat Header */}
             <div
               className={cn(
-                'px-6 py-4',
+                'px-4 py-3 sm:px-6 sm:py-4',
                 'flex items-center justify-between',
-                'relative overflow-hidden'
+                'relative overflow-hidden',
+                'flex-shrink-0'
               )}
               style={{
                 background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)',
@@ -545,24 +574,24 @@ END:VCALENDAR`;
                 <div className="absolute bottom-0 right-0 w-24 h-24 bg-white rounded-full translate-x-12 translate-y-12" />
               </div>
 
-              <div className="flex items-center gap-3 relative z-10">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-2 sm:gap-3 relative z-10">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">AI Assistant</h3>
-                  <p className="text-sm text-white/90 flex items-center gap-1">
+                  <h3 className="font-bold text-base sm:text-lg">AI Assistant</h3>
+                  <p className="text-xs sm:text-sm text-white/90 flex items-center gap-1">
                     <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                     Online
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1 relative z-10">
+              <div className="flex items-center gap-0.5 sm:gap-1 relative z-10">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleClearChat}
-                  className="h-9 px-3 text-xs hover:bg-white/20"
+                  className="h-8 sm:h-9 px-2 sm:px-3 text-xs hover:bg-white/20"
                   style={{
                     color: 'hsl(var(--header-text))',
                   }}
@@ -574,7 +603,7 @@ END:VCALENDAR`;
                   variant="ghost"
                   size="icon"
                   onClick={handleClose}
-                  className="h-9 w-9 hover:bg-white/20"
+                  className="h-8 w-8 sm:h-9 sm:w-9 hover:bg-white/20"
                   style={{
                     color: 'hsl(var(--header-text))',
                   }}
@@ -588,8 +617,11 @@ END:VCALENDAR`;
             {/* Messages Area */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4"
-              style={{ backgroundColor: 'hsl(var(--background))' }}
+              className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 overscroll-contain"
+              style={{ 
+                backgroundColor: 'hsl(var(--background))',
+                WebkitOverflowScrolling: 'touch'
+              }}
             >
               {messages.map((message, index) => renderMessage(message, index))}
 
@@ -642,10 +674,11 @@ END:VCALENDAR`;
 
             {/* Input Area */}
             <div
-              className="p-4 border-t"
+              className="p-3 sm:p-4 border-t flex-shrink-0"
               style={{
                 backgroundColor: 'hsl(var(--card))',
-                borderColor: 'hsl(var(--border))'
+                borderColor: 'hsl(var(--border))',
+                paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
               }}
             >
               <div className="flex items-end gap-2">
@@ -658,7 +691,7 @@ END:VCALENDAR`;
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading || bookingCreated}
-                    className="rounded-xl px-4 py-3 pr-12 border-2 transition-all duration-200 resize-none"
+                    className="rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 pr-10 sm:pr-12 border-2 transition-all duration-200 resize-none text-sm sm:text-base"
                     style={{
                       borderColor: 'hsl(var(--border))',
                       backgroundColor: 'hsl(var(--background))',
@@ -689,7 +722,7 @@ END:VCALENDAR`;
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isLoading || bookingCreated}
                   size="icon"
-                  className="h-12 w-12 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg flex-shrink-0"
                   style={{
                     background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)',
                     color: '#ffffff'
@@ -706,7 +739,7 @@ END:VCALENDAR`;
 
               {/* Helpful hint */}
               {!bookingCreated && messages.length <= 2 && (
-                <p className="text-xs mt-2 text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <p className="text-[10px] sm:text-xs mt-2 text-center leading-tight px-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   💡 Try asking: &quot;Show me vegetarian dishes&quot; or &quot;Book a table for 4&quot;
                 </p>
               )}

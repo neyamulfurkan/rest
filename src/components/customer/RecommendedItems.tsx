@@ -171,15 +171,15 @@ export default function RecommendedItems({
   // Loading skeleton
   if (isLoading) {
     return (
-      <section className="py-6 bg-neutral-50">
-        <div className="container mx-auto px-4 max-w-7xl">
+      <section className="py-3 sm:py-4 md:py-6 bg-neutral-50">
+        <div className="container mx-auto px-3 sm:px-4 max-w-7xl">
           <h2 
-            className="text-2xl md:text-3xl font-bold text-center mb-6"
+            className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-center mb-3 sm:mb-4 md:mb-6"
             style={{ color: branding.primaryColor }}
           >
             Recommended for You
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
@@ -201,11 +201,11 @@ export default function RecommendedItems({
   }
 
   return (
-    <section className="py-6" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
-      <div className="container mx-auto px-4 max-w-7xl">
+    <section className="py-3 sm:py-4 md:py-6" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
+      <div className="container mx-auto px-3 sm:px-4 max-w-7xl">
         {/* Title */}
         <h2 
-          className="text-2xl md:text-3xl font-bold text-center mb-6"
+          className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-center mb-3 sm:mb-4 md:mb-6"
           style={{ color: branding.primaryColor }}
         >
           Recommended for You
@@ -300,21 +300,22 @@ export default function RecommendedItems({
             className="
               overflow-x-auto
               scrollbar-hide
-              -mx-2
-              px-2
+              -mx-1 sm:-mx-2
+              px-1 sm:px-2
             "
             style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
             }}
           >
-            <div className="flex gap-4 pb-2">
+            <div className="flex gap-2 sm:gap-3 md:gap-4 pb-2">
               {recommendations.map((item) => (
                 <div
                   key={item.id}
                   className="
                     flex-none
-                    w-[calc(50%-8px)]
+                    w-[calc(50%-4px)]
+                    sm:w-[calc(50%-6px)]
                     md:w-[calc(33.333%-11px)]
                     lg:w-[calc(25%-12px)]
                   "
@@ -331,7 +332,7 @@ export default function RecommendedItems({
 
           {/* Dots Indicator (Mobile) */}
           {recommendations.length > 1 && (
-            <div className="flex justify-center gap-2 mt-4 md:hidden">
+            <div className="flex justify-center gap-2 mt-2 sm:mt-3 md:hidden">
               {recommendations.map((_, index) => (
                 <button
                   key={index}
