@@ -238,6 +238,9 @@ const nextConfig = {
     ];
   },
 
+  // Trailing slash configuration for SEO
+  trailingSlash: false,
+
   // Headers for security and CORS
   async headers() {
     return [

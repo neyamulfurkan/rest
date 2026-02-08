@@ -431,7 +431,9 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Failed to update settings',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: process.env.NODE_ENV === 'production' 
+          ? 'An error occurred while updating settings' 
+          : (error instanceof Error ? error.message : 'Unknown error'),
       },
       { status: 500 }
     );
@@ -475,6 +477,19 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Get restaurant ID
+    const restaurant = await prisma.restaurant.findFirst({
+      where: { isActive: true },
+      select: { id: true },
+    });
+
+    if (!restaurant) {
+      return NextResponse.json(
+        { success: false, error: 'Restaurant not found' },
+        { status: 404 }
+      );
+    }
+
     // Send notification
     const { sendContactFormNotification } = await import('@/services/notificationService');
 
@@ -484,6 +499,7 @@ export async function PUT(request: NextRequest) {
       phone: body.phone,
       subject: body.subject,
       message: body.message,
+      restaurantId: restaurant.id,
     });
 
     if (!result.success) {

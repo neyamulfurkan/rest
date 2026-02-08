@@ -18,74 +18,163 @@ const inter = Inter({
   weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: 'RestaurantOS - Modern Restaurant Management Platform',
-    template: '%s | RestaurantOS',
-  },
-  description:
-    'A comprehensive, self-hosted restaurant management platform with QR ordering, table booking, admin dashboard, and AI-powered features.',
-  keywords: [
-    'restaurant management',
-    'QR ordering',
-    'table booking',
-    'online ordering',
-    'restaurant POS',
-    'food delivery',
-  ],
-  authors: [{ name: 'RestaurantOS' }],
-  creator: 'RestaurantOS',
-  publisher: 'RestaurantOS',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: '/',
-    title: 'RestaurantOS - Modern Restaurant Management Platform',
-    description:
-      'A comprehensive, self-hosted restaurant management platform with QR ordering, table booking, admin dashboard, and AI-powered features.',
-    siteName: 'RestaurantOS',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'RestaurantOS - Modern Restaurant Management Platform',
-    description:
-      'A comprehensive, self-hosted restaurant management platform with QR ordering, table booking, admin dashboard, and AI-powered features.',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
-  },
-  manifest: '/manifest.json',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
+    // Fetch restaurant settings for dynamic metadata
+    const response = await fetch(`${baseUrl}/api/settings`, {
+      cache: 'no-store',
+    });
+    
+    const { data: settings } = await response.json();
+    const restaurantName = settings?.name || 'RestaurantOS';
+    const description = settings?.description || 'A comprehensive, self-hosted restaurant management platform with QR ordering, table booking, admin dashboard, and AI-powered features.';
+    const logoUrl = settings?.logoUrl;
+    const city = settings?.city || '';
+    const state = settings?.state || '';
+    // Address, phone, email used in structured data below
+    
+    return {
+      title: {
+        default: `${restaurantName} - Order Online & Book Tables${city ? ` in ${city}` : ''}`,
+        template: `%s | ${restaurantName}`,
+      },
+      description: description,
+      keywords: [
+        restaurantName,
+        'restaurant',
+        'food delivery',
+        'online ordering',
+        'table booking',
+        'menu',
+        city,
+        state,
+        'dine in',
+        'takeout',
+        'pickup',
+        'QR ordering',
+      ].filter(Boolean),
+      authors: [{ name: restaurantName }],
+      creator: restaurantName,
+      publisher: restaurantName,
+      formatDetection: {
+        email: false,
+        address: false,
+        telephone: false,
+      },
+      metadataBase: new URL(baseUrl),
+      alternates: {
+        canonical: '/',
+      },
+      openGraph: {
+        type: 'website',
+        locale: 'en_US',
+        url: baseUrl,
+        title: `${restaurantName} - Order Online & Book Tables`,
+        description: description,
+        siteName: restaurantName,
+        images: logoUrl ? [
+          {
+            url: logoUrl,
+            width: 1200,
+            height: 630,
+            alt: `${restaurantName} logo`,
+          },
+        ] : [],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${restaurantName} - Order Online`,
+        description: description,
+        images: logoUrl ? [logoUrl] : [],
+      },
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-video-preview': -1,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
+      },
+      icons: {
+        icon: '/favicon.ico',
+        shortcut: '/favicon-16x16.png',
+        apple: '/apple-touch-icon.png',
+      },
+      manifest: '/manifest.json',
+      other: {
+        'google-site-verification': process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
+      },
+    };
+  } catch (error) {
+    console.error('Failed to generate metadata:', error);
+    // Fallback metadata
+    return {
+      title: 'RestaurantOS - Modern Restaurant Management Platform',
+      description: 'Order food online and book tables',
+    };
+  }
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetch restaurant data for structured data
+  let restaurantData: any = {};
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/settings`, {
+      cache: 'no-store',
+    });
+    const { data } = await response.json();
+    restaurantData = data;
+  } catch (error) {
+    console.error('Failed to fetch restaurant data for SEO:', error);
+  }
+
+  // Generate JSON-LD structured data for Google
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Restaurant',
+    name: restaurantData?.name || 'RestaurantOS',
+    description: restaurantData?.description || 'Online food ordering and table reservations',
+    image: restaurantData?.logoUrl || '',
+    url: process.env.NEXT_PUBLIC_APP_URL,
+    telephone: restaurantData?.phone || '',
+    email: restaurantData?.email || '',
+    address: restaurantData?.address ? {
+      '@type': 'PostalAddress',
+      streetAddress: restaurantData.address,
+      addressLocality: restaurantData.city || '',
+      addressRegion: restaurantData.state || '',
+      postalCode: restaurantData.zipCode || '',
+      addressCountry: restaurantData.country || 'US',
+    } : undefined,
+    priceRange: '$$',
+    servesCuisine: 'Multiple cuisines',
+    acceptsReservations: true,
+    hasMenu: `${process.env.NEXT_PUBLIC_APP_URL}/menu`,
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#ffffff" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        
+        {/* JSON-LD Structured Data for Google */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData),
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `

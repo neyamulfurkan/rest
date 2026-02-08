@@ -97,8 +97,14 @@ export async function GET(request: NextRequest) {
 
     // Handle generic errors
     if (error instanceof Error) {
+      console.error('Orders API error:', error); // Log for debugging
       return NextResponse.json(
-        { success: false, error: error.message },
+        { 
+          success: false, 
+          error: process.env.NODE_ENV === 'production' 
+            ? 'Failed to process request' 
+            : error.message 
+        },
         { status: 500 }
       );
     }

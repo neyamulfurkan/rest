@@ -1,0 +1,18 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /admin/
+Disallow: /api/
+Disallow: /account/
+
+# Sitemap location (will be automatically updated based on deployment domain)
+# Customers should replace this with their actual domain after deployment
+Sitemap: /sitemap.xml
+
+# Crawl-delay for politeness
+Crawl-delay: 1
+
+# Note: After deployment, update the Sitemap URL above to:
+# Sitemap: https://your-actual-domain.com/sitemap.xml

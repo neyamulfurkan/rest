@@ -11,37 +11,44 @@ import { Button } from '@/components/ui/button';
 interface PopularItemsCarouselProps {
   onAddToCart: (item: MenuItemWithRelations) => void;
   onItemClick: (item: MenuItemWithRelations) => void;
+  initialItems?: MenuItemWithRelations[];
 }
 
 export default function PopularItemsCarousel({
   onAddToCart,
   onItemClick,
+  initialItems = [],
 }: PopularItemsCarouselProps) {
   const [popularItems, setPopularItems] = useState<MenuItemWithRelations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch popular items on mount
+  // Use initial items from SSR or fetch on mount
   useEffect(() => {
-    const fetchPopularItems = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch('/api/menu?popular=true&limit=8');
-        if (!response.ok) throw new Error('Failed to fetch popular items');
-        
-        const data = await response.json();
-        setPopularItems(data.data || []);
-      } catch (error) {
-        console.error('Error fetching popular items:', error);
-        setPopularItems([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (initialItems.length > 0) {
+      setPopularItems(initialItems);
+      setIsLoading(false);
+    } else {
+      const fetchPopularItems = async () => {
+        try {
+          setIsLoading(true);
+          const response = await fetch('/api/menu?popular=true&limit=8');
+          if (!response.ok) throw new Error('Failed to fetch popular items');
+          
+          const data = await response.json();
+          setPopularItems(data.data || []);
+        } catch (error) {
+          console.error('Error fetching popular items:', error);
+          setPopularItems([]);
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-    fetchPopularItems();
-  }, []);
+      fetchPopularItems();
+    }
+  }, [initialItems]);
 
   // Auto-scroll functionality
   useEffect(() => {
@@ -134,9 +141,9 @@ export default function PopularItemsCarousel({
 
   return (
     <section className="py-8 md:py-12 overflow-hidden" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
-      <div className="container mx-auto px-2 sm:px-4 max-w-7xl">
+      <div className="container mx-auto px-2 sm:px-4 max-w-7xl" itemScope itemType="https://schema.org/ItemList">
         {/* Title */}
-        <h2 className="text-5xl font-bold text-center mb-8" style={{ color: 'hsl(var(--foreground))' }}>
+        <h2 className="text-5xl font-bold text-center mb-8" style={{ color: 'hsl(var(--foreground))' }} itemProp="name">
           Customer Favorites
         </h2>
 

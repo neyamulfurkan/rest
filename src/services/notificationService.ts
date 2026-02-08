@@ -1,11 +1,35 @@
 // src/services/notificationService.ts
 
-import { twilioClient, TWILIO_PHONE_NUMBER, isTwilioConfigured } from '@/lib/twilio';
-import sgMail, { FROM_EMAIL, isSendGridConfigured } from '@/lib/sendgrid';
+import { getTwilioConfig } from '@/lib/twilio';
+import { getSendGridConfig } from '@/lib/sendgrid';
+import { prisma } from '@/lib/prisma';
 import {
   OrderWithRelations,
   BookingWithRelations,
 } from '@/types';
+import DOMPurify from 'isomorphic-dompurify';
+
+// Sanitize helper
+function sanitize(dirty: string): string {
+  return DOMPurify.sanitize(dirty, {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br', 'p'],
+    ALLOWED_ATTR: ['href'],
+  });
+}
+
+// Helper function to get restaurant contact email
+async function getRestaurantEmail(restaurantId: string): Promise<string> {
+  try {
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { email: true },
+    });
+    return restaurant?.email || 'support@restaurant.com';
+  } catch (error) {
+    console.error('Failed to get restaurant email:', error);
+    return 'support@restaurant.com';
+  }
+}
 
 // ============= SMS FUNCTIONS =============
 
@@ -17,30 +41,56 @@ import {
  */
 export async function sendSMS(
   to: string,
-  message: string
+  message: string,
+  restaurantId: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    // Check if Twilio is configured
-    if (!isTwilioConfigured || !twilioClient) {
-      return {
-        success: false,
-        error: 'Twilio is not configured. Please add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER to your environment variables.',
-      };
-    }
-
     // Validate phone number format (basic check)
     if (!to || to.trim().length === 0) {
       throw new Error('Recipient phone number is required');
     }
 
+    // Format phone number to E.164 if not already
+    let formattedPhone = to.trim();
+    if (!formattedPhone.startsWith('+')) {
+      // If no country code, assume US (+1)
+      formattedPhone = '+1' + formattedPhone.replace(/\D/g, '');
+    }
+
+    // Get Twilio config for this restaurant
+    const twilioConfig = await getTwilioConfig(restaurantId);
+    
+    if (!twilioConfig) {
+      console.warn(`Twilio not configured for restaurant ${restaurantId}, skipping SMS`);
+      return {
+        success: false,
+        error: 'Twilio is not configured for this restaurant. Please configure it in Settings > Notifications.',
+      };
+    }
+
     // Send SMS via Twilio
-    const result = await twilioClient.messages.create({
+    const result = await twilioConfig.client.messages.create({
       body: message,
-      from: TWILIO_PHONE_NUMBER,
-      to: to,
+      from: twilioConfig.phoneNumber,
+      to: formattedPhone,
     });
 
-    console.log(`SMS sent successfully to ${to}, SID: ${result.sid}`);
+    console.log(`SMS sent successfully to ${formattedPhone}, SID: ${result.sid}`);
+
+    // Track notification in database
+    await prisma.notification.create({
+      data: {
+        restaurantId: restaurantId,
+        type: 'ORDER_STATUS_UPDATE',
+        recipient: formattedPhone,
+        message: message,
+        isSent: true,
+        sentAt: new Date(),
+        metadata: {
+          messageId: result.sid,
+        },
+      },
+    }).catch(err => console.error('Failed to track notification:', err));
 
     return {
       success: true,
@@ -48,6 +98,21 @@ export async function sendSMS(
     };
   } catch (error) {
     console.error('Failed to send SMS:', error);
+    
+    // Track failed notification
+    await prisma.notification.create({
+      data: {
+        restaurantId: restaurantId,
+        type: 'ORDER_STATUS_UPDATE',
+        recipient: to,
+        message: message,
+        isSent: false,
+        metadata: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      },
+    }).catch(err => console.error('Failed to track notification:', err));
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to send SMS',
@@ -69,17 +134,10 @@ export async function sendEmail(
   to: string,
   subject: string,
   html: string,
+  restaurantId: string,
   text?: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    // Check if SendGrid is configured
-    if (!isSendGridConfigured) {
-      return {
-        success: false,
-        error: 'SendGrid is not configured. Please add SENDGRID_API_KEY and SENDGRID_FROM_EMAIL to your environment variables.',
-      };
-    }
-
     // Validate email address (basic check)
     if (!to || !to.includes('@')) {
       throw new Error('Valid recipient email address is required');
@@ -93,18 +151,45 @@ export async function sendEmail(
       throw new Error('Email content is required');
     }
 
+    // Get SendGrid config for this restaurant
+    const sendGridConfig = await getSendGridConfig(restaurantId);
+    
+    if (!sendGridConfig) {
+      console.warn(`SendGrid not configured for restaurant ${restaurantId}, skipping email`);
+      return {
+        success: false,
+        error: 'SendGrid is not configured for this restaurant. Please configure it in Settings > Notifications.',
+      };
+    }
+
     // Send email via SendGrid
     const msg = {
       to,
-      from: FROM_EMAIL,
+      from: sendGridConfig.fromEmail,
       subject,
       html,
-      text: text || stripHtml(html), // Fallback to stripped HTML if no text provided
+      text: text || stripHtml(html),
     };
 
-    const result = await sgMail.send(msg);
+    const result = await sendGridConfig.client.send(msg);
 
     console.log(`Email sent successfully to ${to}`);
+
+    // Track notification in database
+    await prisma.notification.create({
+      data: {
+        restaurantId: restaurantId,
+        type: 'ORDER_CONFIRMATION',
+        recipient: to,
+        subject: subject,
+        message: html,
+        isSent: true,
+        sentAt: new Date(),
+        metadata: {
+          messageId: result[0].headers['x-message-id'],
+        },
+      },
+    }).catch(err => console.error('Failed to track notification:', err));
 
     return {
       success: true,
@@ -112,6 +197,22 @@ export async function sendEmail(
     };
   } catch (error) {
     console.error('Failed to send email:', error);
+    
+    // Track failed notification
+    await prisma.notification.create({
+      data: {
+        restaurantId: restaurantId,
+        type: 'ORDER_CONFIRMATION',
+        recipient: to,
+        subject: subject,
+        message: html,
+        isSent: false,
+        metadata: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      },
+    }).catch(err => console.error('Failed to track notification:', err));
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to send email',
@@ -133,9 +234,14 @@ export async function sendOrderConfirmation(
   const orderNumber = order.orderNumber;
   const totalAmount = order.totalAmount;
   const orderType = order.type;
+  const restaurantId = order.restaurantId;
 
   // Check customer notification preferences
-  const prefs = (order.customer as any).notificationPreferences || { email: true, sms: true };
+  const prefs = order.customer.notificationPreferences
+    ? (typeof order.customer.notificationPreferences === 'string'
+        ? JSON.parse(order.customer.notificationPreferences)
+        : order.customer.notificationPreferences)
+    : { email: true, sms: true };
 
   // SMS message
   const smsMessage = `Hi ${customerName}! Your order ${orderNumber} (${orderType}) has been confirmed. Total: $${totalAmount.toFixed(2)}. We'll notify you when it's ready!`;
@@ -146,8 +252,12 @@ export async function sendOrderConfirmation(
 
   // Send both notifications (respecting preferences)
   const [smsResult, emailResult] = await Promise.all([
-    order.customer.phone ? sendSMS(order.customer.phone, smsMessage) : Promise.resolve({ success: false }),
-    sendEmail(order.customer.email, emailSubject, emailHtml),
+    prefs.sms && order.customer.phone 
+      ? sendSMS(order.customer.phone, smsMessage, restaurantId) 
+      : Promise.resolve({ success: false }),
+    prefs.email 
+      ? sendEmail(order.customer.email, emailSubject, emailHtml, restaurantId) 
+      : Promise.resolve({ success: false }),
   ]);
 
   return {
@@ -169,9 +279,14 @@ export async function sendOrderStatusUpdate(
   const status = newStatus || order.status;
   const customerName = order.customer.name;
   const orderNumber = order.orderNumber;
+  const restaurantId = order.restaurantId;
 
   // Check customer notification preferences
-  const prefs = (order.customer as any).notificationPreferences || { email: true, sms: true };
+  const prefs = order.customer.notificationPreferences
+    ? (typeof order.customer.notificationPreferences === 'string'
+        ? JSON.parse(order.customer.notificationPreferences)
+        : order.customer.notificationPreferences)
+    : { email: true, sms: true };
 
   // Generate status-specific messages
   const statusMessages = getOrderStatusMessages(status, orderNumber);
@@ -185,8 +300,12 @@ export async function sendOrderStatusUpdate(
 
   // Send both notifications (respecting preferences)
   const [smsResult, emailResult] = await Promise.all([
-    prefs.sms && order.customer.phone ? sendSMS(order.customer.phone, smsMessage) : Promise.resolve({ success: false }),
-    prefs.email ? sendEmail(order.customer.email, emailSubject, emailHtml) : Promise.resolve({ success: false }),
+    prefs.sms && order.customer.phone 
+      ? sendSMS(order.customer.phone, smsMessage, restaurantId) 
+      : Promise.resolve({ success: false }),
+    prefs.email 
+      ? sendEmail(order.customer.email, emailSubject, emailHtml, restaurantId) 
+      : Promise.resolve({ success: false }),
   ]);
 
   return {
@@ -207,6 +326,7 @@ export async function sendBookingConfirmation(
 ): Promise<{ sms: boolean; email: boolean }> {
   const customerName = booking.customer.name;
   const bookingNumber = booking.bookingNumber;
+  const restaurantId = booking.restaurantId;
   const date = new Date(booking.date).toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -217,7 +337,11 @@ export async function sendBookingConfirmation(
   const guests = booking.guests;
 
   // Check customer notification preferences
-  const prefs = (booking.customer as any).notificationPreferences || { email: true, sms: true };
+  const prefs = booking.customer.notificationPreferences
+    ? (typeof booking.customer.notificationPreferences === 'string'
+        ? JSON.parse(booking.customer.notificationPreferences)
+        : booking.customer.notificationPreferences)
+    : { email: true, sms: true };
 
   // SMS message
   const smsMessage = `Hi ${customerName}! Your table reservation ${bookingNumber} is confirmed for ${date} at ${time} for ${guests} guest${guests > 1 ? 's' : ''}. See you soon!`;
@@ -228,8 +352,12 @@ export async function sendBookingConfirmation(
 
   // Send both notifications (respecting preferences)
   const [smsResult, emailResult] = await Promise.all([
-    prefs.sms && booking.customer.phone ? sendSMS(booking.customer.phone, smsMessage) : Promise.resolve({ success: false }),
-    prefs.email ? sendEmail(booking.customer.email, emailSubject, emailHtml) : Promise.resolve({ success: false }),
+    prefs.sms && booking.customer.phone 
+      ? sendSMS(booking.customer.phone, smsMessage, restaurantId) 
+      : Promise.resolve({ success: false }),
+    prefs.email 
+      ? sendEmail(booking.customer.email, emailSubject, emailHtml, restaurantId) 
+      : Promise.resolve({ success: false }),
   ]);
 
   return {
@@ -249,6 +377,7 @@ export async function sendBookingReminder(
   hoursBeforeBooking: number
 ): Promise<{ sms: boolean; email: boolean }> {
   const customerName = booking.customer.name;
+  const restaurantId = booking.restaurantId;
   const date = new Date(booking.date).toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -258,7 +387,11 @@ export async function sendBookingReminder(
   const guests = booking.guests;
 
   // Check customer notification preferences
-  const prefs = (booking.customer as any).notificationPreferences || { email: true, sms: true };
+  const prefs = booking.customer.notificationPreferences
+    ? (typeof booking.customer.notificationPreferences === 'string'
+        ? JSON.parse(booking.customer.notificationPreferences)
+        : booking.customer.notificationPreferences)
+    : { email: true, sms: true };
 
   // SMS message
   const smsMessage = `Hi ${customerName}! Reminder: Your table for ${guests} is reserved ${hoursBeforeBooking === 24 ? 'tomorrow' : 'in 2 hours'} on ${date} at ${time}. Reply CANCEL to cancel.`;
@@ -269,8 +402,12 @@ export async function sendBookingReminder(
 
   // Send both notifications (respecting preferences)
   const [smsResult, emailResult] = await Promise.all([
-    prefs.sms && booking.customer.phone ? sendSMS(booking.customer.phone, smsMessage) : Promise.resolve({ success: false }),
-    prefs.email ? sendEmail(booking.customer.email, emailSubject, emailHtml) : Promise.resolve({ success: false }),
+    prefs.sms && booking.customer.phone 
+      ? sendSMS(booking.customer.phone, smsMessage, restaurantId) 
+      : Promise.resolve({ success: false }),
+    prefs.email 
+      ? sendEmail(booking.customer.email, emailSubject, emailHtml, restaurantId) 
+      : Promise.resolve({ success: false }),
   ]);
 
   return {
@@ -356,7 +493,7 @@ function generateOrderConfirmationEmail(order: OrderWithRelations): string {
   <p>We'll send you another notification when your order is ready!</p>
   
   <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
-    <p style="margin: 0; font-size: 14px; color: #666;">Questions? Contact us at ${FROM_EMAIL}</p>
+    <p style="margin: 0; font-size: 14px; color: #666;">Questions? Reply to this email or contact us directly.</p>
   </div>
 </body>
 </html>
@@ -393,7 +530,7 @@ function generateOrderStatusUpdateEmail(
   </div>
   
   <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
-    <p style="margin: 0; font-size: 14px; color: #666;">Questions? Contact us at ${FROM_EMAIL}</p>
+    <p style="margin: 0; font-size: 14px; color: #666;">Questions? Reply to this email or contact us directly.</p>
   </div>
 </body>
 </html>
@@ -440,7 +577,7 @@ function generateBookingConfirmationEmail(booking: BookingWithRelations): string
   <p>We'll send you a reminder before your reservation.</p>
   
   <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
-    <p style="margin: 0; font-size: 14px; color: #666;">Need to cancel or modify? Contact us at ${FROM_EMAIL}</p>
+    <p style="margin: 0; font-size: 14px; color: #666;">Need to cancel or modify? Reply to this email or contact us directly.</p>
   </div>
 </body>
 </html>
@@ -488,7 +625,7 @@ function generateBookingReminderEmail(
   <p>We look forward to seeing you!</p>
   
   <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
-    <p style="margin: 0; font-size: 14px; color: #666;">Need to cancel? Contact us at ${FROM_EMAIL}</p>
+    <p style="margin: 0; font-size: 14px; color: #666;">Need to cancel? Reply to this email or contact us directly.</p>
   </div>
 </body>
 </html>
@@ -509,6 +646,7 @@ export async function sendContactFormNotification(
     phone?: string;
     subject: string;
     message: string;
+    restaurantId: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -528,19 +666,19 @@ export async function sendContactFormNotification(
   
   <div style="background-color: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; margin: 20px 0;">
     <h2 style="margin-top: 0; color: #0ea5e9;">Contact Details</h2>
-    <p><strong>Name:</strong> ${contactData.name}</p>
-    <p><strong>Email:</strong> <a href="mailto:${contactData.email}">${contactData.email}</a></p>
-    ${contactData.phone ? `<p><strong>Phone:</strong> <a href="tel:${contactData.phone}">${contactData.phone}</a></p>` : ''}
-    <p><strong>Subject:</strong> ${contactData.subject}</p>
+    <p><strong>Name:</strong> ${sanitize(contactData.name)}</p>
+    <p><strong>Email:</strong> <a href="mailto:${sanitize(contactData.email)}">${sanitize(contactData.email)}</a></p>
+    ${contactData.phone ? `<p><strong>Phone:</strong> <a href="tel:${sanitize(contactData.phone)}">${sanitize(contactData.phone)}</a></p>` : ''}
+    <p><strong>Subject:</strong> ${sanitize(contactData.subject)}</p>
     
     <h3 style="margin-top: 20px;">Message</h3>
     <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-      <p style="margin: 0; white-space: pre-wrap;">${contactData.message}</p>
+      <p style="margin: 0; white-space: pre-wrap;">${sanitize(contactData.message)}</p>
     </div>
   </div>
   
   <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
-    <p style="margin: 0; font-size: 14px; color: #666;">Reply to this customer at ${contactData.email}</p>
+    <p style="margin: 0; font-size: 14px; color: #666;">Reply to this customer at ${sanitize(contactData.email)}</p>
   </div>
 </body>
 </html>
@@ -560,30 +698,38 @@ export async function sendContactFormNotification(
     <h1 style="color: #0ea5e9; margin: 0;">Message Received!</h1>
   </div>
   
-  <p>Hi ${contactData.name},</p>
+  <p>Hi ${sanitize(contactData.name)},</p>
   <p>Thank you for contacting us! We've received your message and will get back to you shortly.</p>
   
   <div style="background-color: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; margin: 20px 0;">
     <h2 style="margin-top: 0; color: #0ea5e9;">Your Message</h2>
-    <p><strong>Subject:</strong> ${contactData.subject}</p>
+    <p><strong>Subject:</strong> ${sanitize(contactData.subject)}</p>
     <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 10px;">
-      <p style="margin: 0; white-space: pre-wrap;">${contactData.message}</p>
+      <p style="margin: 0; white-space: pre-wrap;">${sanitize(contactData.message)}</p>
     </div>
   </div>
   
   <p>We typically respond within 24 hours during business days.</p>
   
   <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
-    <p style="margin: 0; font-size: 14px; color: #666;">Questions? Reply to this email at ${FROM_EMAIL}</p>
+    <p style="margin: 0; font-size: 14px; color: #666;">Questions? Reply to this email or contact us directly.</p>
   </div>
 </body>
 </html>
     `;
 
+    // Get restaurant email for admin notification
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: contactData.restaurantId },
+      select: { email: true },
+    });
+
+    const adminEmail = restaurant?.email || 'admin@restaurant.com';
+
     // Send both emails
     const [adminResult, customerResult] = await Promise.all([
-      sendEmail(FROM_EMAIL, `New Contact: ${contactData.subject}`, adminEmailHtml),
-      sendEmail(contactData.email, 'We received your message!', customerEmailHtml),
+      sendEmail(adminEmail, `New Contact: ${contactData.subject}`, adminEmailHtml, contactData.restaurantId),
+      sendEmail(contactData.email, 'We received your message!', customerEmailHtml, contactData.restaurantId),
     ]);
 
     if (!adminResult.success) {

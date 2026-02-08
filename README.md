@@ -505,3 +505,20 @@ Built with:
 
 **Made with ❤️ for restaurants worldwide** 
  
+## 🔧 Post-Deployment SEO Setup
+
+After deploying your restaurant website, update the following file:
+
+**File:** `public/robots.txt`
+
+Change this line:
+```
+Sitemap: /sitemap.xml
+```
+
+To:
+```
+Sitemap: https://your-actual-domain.com/sitemap.xml
+```
+
+Replace `your-actual-domain.com` with your actual domain name.

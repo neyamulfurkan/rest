@@ -227,7 +227,9 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Upload failed',
-        message: error.message,
+        message: process.env.NODE_ENV === 'production'
+          ? 'File upload failed'
+          : error.message,
       },
       { status: 500 }
     );
@@ -275,7 +277,13 @@ export async function DELETE(request: NextRequest) {
   } catch (error: any) {
     console.error('Delete file API error:', error);
     return NextResponse.json(
-      { success: false, error: 'Deletion failed', message: error.message },
+      { 
+        success: false, 
+        error: 'Deletion failed', 
+        message: process.env.NODE_ENV === 'production'
+          ? 'File deletion failed'
+          : error.message 
+      },
       { status: 500 }
     );
   }

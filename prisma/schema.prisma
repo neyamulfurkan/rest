@@ -75,6 +75,7 @@ model Restaurant {
   settings             Setting[]
   staff                Staff[]
   tables               Table[]
+  notifications        Notification[]
 
   @@index([slug])
 }
@@ -379,16 +380,19 @@ model Setting {
 }
 
 model Notification {
-  id        String           @id @default(cuid())
-  type      NotificationType
-  recipient String
-  subject   String?
-  message   String
-  isSent    Boolean          @default(false)
-  sentAt    DateTime?
-  metadata  Json?
-  createdAt DateTime         @default(now())
+  id           String           @id @default(cuid())
+  restaurantId String
+  type         NotificationType
+  recipient    String
+  subject      String?
+  message      String
+  isSent       Boolean          @default(false)
+  sentAt       DateTime?
+  metadata     Json?
+  createdAt    DateTime         @default(now())
+  restaurant   Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
+  @@index([restaurantId, createdAt])
   @@index([isSent, createdAt])
 }
 

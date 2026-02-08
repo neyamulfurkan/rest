@@ -45,9 +45,21 @@ declare module 'next-auth/jwt' {
   }
 }
 
-// Session cache
+// Session cache with automatic cleanup
 const sessionCache = new Map<string, { data: any; timestamp: number }>();
 const SESSION_CACHE_TTL = 60000; // 1 minute
+
+// Cleanup old sessions every 5 minutes
+if (typeof window === 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of sessionCache.entries()) {
+      if (now - value.timestamp > SESSION_CACHE_TTL) {
+        sessionCache.delete(key);
+      }
+    }
+  }, 5 * 60 * 1000); // 5 minutes
+}
 
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),

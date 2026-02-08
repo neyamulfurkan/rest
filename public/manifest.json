@@ -8,6 +8,15 @@
   "theme_color": "#0ea5e9",
   "orientation": "portrait-primary",
   "icons": [],
+  "categories": [
+    "food",
+    "business",
+    "productivity"
+  ],
+  "dir": "ltr",
+  "lang": "en-US",
+  "scope": "/",
+  "prefer_related_applications": false,
   "screenshots": [
     {
       "src": "/screenshots/home-mobile.png",

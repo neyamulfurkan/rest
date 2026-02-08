@@ -136,7 +136,9 @@ export async function GET(
       {
         success: false,
         error: 'Failed to fetch customer details',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: process.env.NODE_ENV === 'production'
+          ? 'An error occurred'
+          : (error instanceof Error ? error.message : 'Unknown error'),
       } as ApiResponse,
       { status: 500 }
     );

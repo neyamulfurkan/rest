@@ -3,10 +3,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/services/notificationService';
 import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
 
 // ============= VALIDATION SCHEMA =============
 
 const sendEmailSchema = z.object({
+  restaurantId: z.string().min(1, 'Restaurant ID is required'),
   to: z.string().email('Valid email address is required'),
   subject: z.string().min(1, 'Subject is required').max(200, 'Subject must be less than 200 characters'),
   html: z.string().min(1, 'Email content is required'),
@@ -26,11 +28,42 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = sendEmailSchema.parse(body);
 
+    // Get restaurantId from request body
+    const { restaurantId } = body;
+
+    if (!restaurantId) {
+      return NextResponse.json(
+        { success: false, error: 'Restaurant ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify restaurant exists and is active
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { id: true, isActive: true },
+    });
+
+    if (!restaurant) {
+      return NextResponse.json(
+        { success: false, error: 'Restaurant not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!restaurant.isActive) {
+      return NextResponse.json(
+        { success: false, error: 'Restaurant is not active' },
+        { status: 403 }
+      );
+    }
+
     // Send email
     const result = await sendEmail(
       validated.to,
       validated.subject,
       validated.html,
+      restaurant.id,
       validated.text
     );
 

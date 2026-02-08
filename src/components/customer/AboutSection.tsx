@@ -60,7 +60,7 @@ export function AboutSection({ content }: AboutSectionProps) {
       className="py-12 md:py-24 overflow-hidden"
       style={{ backgroundColor: bgColor }}
     >
-      <div className="container mx-auto px-2 sm:px-4 max-w-7xl">
+      <div className="container mx-auto px-2 sm:px-4 max-w-7xl" itemScope itemType="https://schema.org/ItemList">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}

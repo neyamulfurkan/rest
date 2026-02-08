@@ -13,6 +13,28 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     const headersList = await headers();
     
+    // Get PayPal webhook signature headers
+    const transmissionId = headersList.get('paypal-transmission-id');
+    const transmissionTime = headersList.get('paypal-transmission-time');
+    const certUrl = headersList.get('paypal-cert-url');
+    const authAlgo = headersList.get('paypal-auth-algo');
+    const transmissionSig = headersList.get('paypal-transmission-sig');
+    const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+
+    // Verify webhook signature (basic validation)
+    // For production, use PayPal SDK verification
+    if (!transmissionId || !transmissionSig) {
+      console.error('Missing PayPal webhook signature headers');
+      return NextResponse.json(
+        { error: 'Invalid webhook signature' },
+        { status: 400 }
+      );
+    }
+
+    // TODO: For production, implement full PayPal SDK verification:
+    // const PayPal = require('@paypal/checkout-server-sdk');
+    // Verify webhook event authenticity using PayPal.notification.webhookEvent.verify()
+    
     // Parse PayPal webhook event
     const event = JSON.parse(body);
     

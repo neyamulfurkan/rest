@@ -1,6 +1,6 @@
 // src/app/(customer)/booking/page.tsx
 
-'use client';
+import type { Metadata } from 'next';
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -51,7 +51,148 @@ interface BookingConfirmation {
 
 // ============= COMPONENT =============
 
-export default function BookingPage() {
+// Generate metadata for SEO
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const { data: settings } = await response.json();
+    
+    const restaurantName = settings?.name || 'RestaurantOS';
+    const description = settings?.description || 'Reserve your table online';
+    const city = settings?.city || '';
+    const state = settings?.state || '';
+    const logoUrl = settings?.logoUrl;
+
+    return {
+      title: `Book a Table - ${restaurantName}${city ? ` | ${city}, ${state}` : ''}`,
+      description: `Reserve your table at ${restaurantName}. Easy online booking${city ? ` in ${city}, ${state}` : ''}. Choose your date, time, and party size.`,
+      keywords: [
+        restaurantName,
+        'table reservation',
+        'book a table',
+        'restaurant booking',
+        'reserve table',
+        city,
+        state,
+        'online reservation',
+        'table booking',
+      ].filter(Boolean),
+      alternates: {
+        canonical: '/booking',
+      },
+      openGraph: {
+        title: `Book a Table - ${restaurantName}`,
+        description: description,
+        type: 'website',
+        url: `${baseUrl}/booking`,
+        siteName: restaurantName,
+        images: logoUrl ? [{
+          url: logoUrl,
+          width: 1200,
+          height: 630,
+          alt: `Book a table at ${restaurantName}`,
+        }] : [],
+      },
+      robots: {
+        index: true,
+        follow: true,
+      },
+    };
+  } catch (error) {
+    console.error('Failed to generate booking metadata:', error);
+    return {
+      title: 'Book a Table - RestaurantOS',
+      description: 'Reserve your table online',
+    };
+  }
+}
+
+export default async function BookingPage() {
+  // Fetch settings server-side for SEO
+  let settings: any = {};
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const { data } = await response.json();
+    settings = data || {};
+  } catch (error) {
+    console.error('Failed to fetch settings:', error);
+  }
+
+  const restaurantName = settings?.name || 'RestaurantOS';
+  const city = settings?.city || '';
+  const state = settings?.state || '';
+
+  // Generate ReserveAction JSON-LD
+  const reservationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FoodEstablishment',
+    name: restaurantName,
+    acceptsReservations: 'True',
+    potentialAction: {
+      '@type': 'ReserveAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${process.env.NEXT_PUBLIC_APP_URL}/booking`,
+        actionPlatform: [
+          'http://schema.org/DesktopWebPlatform',
+          'http://schema.org/MobileWebPlatform',
+        ],
+      },
+      result: {
+        '@type': 'Reservation',
+        name: 'Table Reservation',
+      },
+    },
+  };
+
+  // Breadcrumb schema
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: process.env.NEXT_PUBLIC_APP_URL,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Book a Table',
+        item: `${process.env.NEXT_PUBLIC_APP_URL}/booking`,
+      },
+    ],
+  };
+
+  return (
+    <>
+      {/* JSON-LD Structured Data for Reservations */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(reservationSchema),
+        }}
+      />
+      
+      {/* Breadcrumb Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema),
+        }}
+      />
+
+      <BookingPageClient restaurantName={restaurantName} city={city} state={state} />
+    </>
+  );
+}
+
+// Client Component for interactivity
+function BookingPageClient({ restaurantName, city, state }: { restaurantName: string; city: string; state: string }) {
+  'use client';
   const { data: session } = useSession();
   const user = session?.user;
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -356,10 +497,10 @@ export default function BookingPage() {
   return (
     <div className="min-h-screen py-8 bg-background">
       <div className="container mx-auto px-4 max-w-4xl">
-        {/* Header */}
+        {/* Header with SEO-optimized h1 */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2 text-foreground">
-            Book a Table
+            Book a Table at {restaurantName}{city ? ` - ${city}, ${state}` : ''}
           </h1>
           <p className="text-lg text-muted-foreground">
             Reserve your spot for an unforgettable dining experience

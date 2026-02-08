@@ -199,6 +199,26 @@ export default function Footer() {
           </p>
         </div>
       </div>
+
+      {/* Local Business Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'LocalBusiness',
+            name: restaurantName,
+            '@id': typeof window !== 'undefined' ? window.location.origin : '',
+            url: typeof window !== 'undefined' ? window.location.origin : '',
+            telephone: phone || '',
+            email: email || '',
+            address: address ? {
+              '@type': 'PostalAddress',
+              streetAddress: address,
+            } : undefined,
+          }),
+        }}
+      />
     </footer>
   );
 }

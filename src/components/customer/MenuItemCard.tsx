@@ -55,7 +55,7 @@ export default function MenuItemCard({
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100 shrink-0">
         <Image
           src={item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="18"%3ENo image%3C/text%3E%3C/svg%3E'}
-          alt={item.name}
+          alt={`${item.name} - ${item.category?.name || 'Menu item'} at restaurant`}
           fill
           className="object-cover"
           loading="lazy"

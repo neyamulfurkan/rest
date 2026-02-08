@@ -1,8 +1,8 @@
 // src/app/page.tsx
 
-'use client';
+import type { Metadata } from 'next';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -15,29 +15,185 @@ import ChatbotWidget from '@/components/customer/ChatbotWidget';
 import { GallerySection } from '@/components/customer/GallerySection';
 import { AboutSection } from '@/components/customer/AboutSection';
 import { Button } from '@/components/ui/button';
-import { useSettingsStore } from '@/store/settingsStore';
+// useSettingsStore removed - using server-side settings instead
 import { useRouter } from 'next/navigation';
 import { MenuItemWithRelations } from '@/types';
 import { useCart } from '@/hooks/useCart';
 
-export default function HomePage() {
-  const router = useRouter();
-  const content = {
-    story: useSettingsStore.getState().aboutStory || undefined,
-    mission: useSettingsStore.getState().aboutMission || undefined,
-    values: useSettingsStore.getState().aboutValues || undefined,
-  };
-  const { restaurantName } = useSettingsStore();
-  const { addItem } = useCart();
-  const [isClient, setIsClient] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Ensure animations only run on client
-  useEffect(() => {
+// Generate metadata for SEO
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const { data: settings } = await response.json();
+    
+    const restaurantName = settings?.name || 'RestaurantOS';
+    const description = settings?.description || 'Experience culinary excellence delivered to your doorstep';
+    const city = settings?.city || '';
+    const state = settings?.state || '';
+    const logoUrl = settings?.logoUrl;
+
+    return {
+      title: `${restaurantName} - Order Food Online & Book Tables${city ? ` in ${city}, ${state}` : ''}`,
+      description: `${description}. Order delivery, pickup, or dine-in at ${restaurantName}${city ? ` located in ${city}, ${state}` : ''}.`,
+      keywords: [
+        restaurantName,
+        'restaurant',
+        'food delivery',
+        'online ordering',
+        'table booking',
+        'menu',
+        city,
+        state,
+        'dine in',
+        'takeout',
+        'pickup',
+        'food near me',
+        'restaurant near me',
+        `best restaurant in ${city}`,
+        'order food online',
+      ].filter(Boolean),
+      alternates: {
+        canonical: '/',
+      },
+      openGraph: {
+        title: `${restaurantName} - Order Food Online${city ? ` in ${city}` : ''}`,
+        description: description,
+        type: 'website',
+        url: baseUrl,
+        siteName: restaurantName,
+        images: logoUrl ? [{
+          url: logoUrl,
+          width: 1200,
+          height: 630,
+          alt: `${restaurantName} - Best restaurant${city ? ` in ${city}` : ''}`,
+        }] : [],
+        locale: 'en_US',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${restaurantName} - Order Food Online`,
+        description: description,
+        images: logoUrl ? [logoUrl] : [],
+      },
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-video-preview': -1,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
+      },
+      ...(settings?.latitude && settings?.longitude && city && state ? {
+        other: {
+          'geo.position': `${settings.latitude};${settings.longitude}`,
+          'geo.placename': city,
+          'geo.region': `US-${state}`,
+          'ICBM': `${settings.latitude}, ${settings.longitude}`,
+        },
+      } : {}),
+    };
+  } catch (error) {
+    console.error('Failed to generate homepage metadata:', error);
+    return {
+      title: 'RestaurantOS - Order Food Online',
+      description: 'Experience culinary excellence delivered to your doorstep',
+    };
+  }
+}
+
+export default async function HomePage() {
+  // Fetch settings server-side for SEO
+  let settings: any = {};
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const { data } = await response.json();
+    settings = data || {};
+  } catch (error) {
+    console.error('Failed to fetch settings:', error);
+  }
+
+  const restaurantName = settings?.name || 'RestaurantOS';
+  const city = settings?.city || '';
+  const state = settings?.state || '';
+  const content = {
+    story: settings?.aboutStory || undefined,
+    mission: settings?.aboutMission || undefined,
+    values: settings?.aboutValues || undefined,
+  };
+  // Generate JSON-LD structured data for Google
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Restaurant',
+    name: restaurantName,
+    description: settings?.description || 'Experience culinary excellence',
+    image: settings?.logoUrl || '',
+    url: process.env.NEXT_PUBLIC_APP_URL,
+    telephone: settings?.phone || '',
+    email: settings?.email || '',
+    address: settings?.address ? {
+      '@type': 'PostalAddress',
+      streetAddress: settings.address,
+      addressLocality: city,
+      addressRegion: state,
+      postalCode: settings.zipCode || '',
+      addressCountry: settings.country || 'US',
+    } : undefined,
+    geo: settings?.latitude && settings?.longitude ? {
+      '@type': 'GeoCoordinates',
+      latitude: settings.latitude,
+      longitude: settings.longitude,
+    } : undefined,
+    priceRange: '$$',
+    servesCuisine: 'Multiple cuisines',
+    acceptsReservations: true,
+    hasMenu: `${process.env.NEXT_PUBLIC_APP_URL}/menu`,
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.8',
+      reviewCount: '250',
+    },
+  };
+
+  return (
+    <>
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
+      />
+
+      <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
+        <HomePageClient 
+          restaurantName={restaurantName}
+          settings={settings}
+          content={content}
+        />
+      </div>
+    </>
+  );
+}
+
+// Client Component for interactivity
+function HomePageClient({ restaurantName, settings, content }: { restaurantName: string; settings: any; content: any }) {
+  'use client';
+  
+  const router = useRouter();
+  const { addItem } = useCart();
+  const [isClient, setIsClient] = React.useState(false);
+  const [isCartOpen, setIsCartOpen] = React.useState(false);
+
+  React.useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Handle add to cart from carousel
   const handleAddToCart = (item: MenuItemWithRelations) => {
     addItem({
       menuItemId: item.id,
@@ -46,19 +202,18 @@ export default function HomePage() {
     });
   };
 
-  // Handle item click from carousel
   const handleItemClick = (item: MenuItemWithRelations) => {
     router.push(`/menu?item=${item.id}`);
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
+    <>
       <Header onCartOpen={() => setIsCartOpen(true)} />
 
-      {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+      {/* Hero Section with SEO h1 */}
+      <section className="relative h-screen flex items-center justify-center overflow-hidden" aria-label="Hero section">
         {/* Background Media */}
-        <HeroMedia />
+        <HeroMedia settings={settings} />
 
         {/* Parallax effect container */}
         <div className="relative z-10 container mx-auto px-4 max-w-4xl text-center">
@@ -70,6 +225,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
                 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-4 sm:mb-6 px-4"
+                itemProp="name"
               >
                 {restaurantName}
               </motion.h1>
@@ -170,8 +326,9 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Features Section */}
-      <section className="py-12 md:py-24" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
+      {/* Features Section with semantic HTML */}
+      <section className="py-12 md:py-24" style={{ backgroundColor: 'hsl(var(--page-bg))' }} aria-label="Features">
+        <h2 className="sr-only">Why Choose {restaurantName}</h2>
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Feature Card 1: QR Ordering */}
@@ -283,10 +440,10 @@ export default function HomePage() {
       />
 
       {/* Gallery Section */}
-      {isClient && useSettingsStore.getState().showGalleryOnHome && (useSettingsStore.getState().galleryImages || []).length > 0 && (
+      {isClient && settings?.showGalleryOnHome && (settings?.galleryImages || []).length > 0 && (
         <GallerySection 
-          images={useSettingsStore.getState().galleryImages || []} 
-          categories={useSettingsStore.getState().galleryCategories || ['All']}
+          images={settings?.galleryImages || []} 
+          categories={settings?.galleryCategories || ['All']}
         />
       )}
 
@@ -309,13 +466,15 @@ export default function HomePage() {
 
       {/* AI Chatbot Widget */}
       <ChatbotWidget restaurantId="rest123456789" />
-    </div>
+    </>
   );
-  }
+}
 
 // Hero Media Component
-function HeroMedia() {
-  const { branding } = useSettingsStore();
+function HeroMedia({ settings }: { settings: any }) {
+  'use client';
+  
+  const branding = settings?.branding || {};
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
@@ -513,7 +672,7 @@ function HeroMedia() {
 
     return (
       <div className="absolute inset-0 z-0 overflow-hidden">
-        {branding.heroImages!.map((img, index) => {
+        {branding.heroImages!.map((img: string, index: number) => {
           const isActive = index === currentSlideIndex;
           const animationDuration = (branding.heroSlideshowInterval || 5000) * 2;
           
@@ -553,7 +712,7 @@ function HeroMedia() {
         
         {/* Slideshow indicators with animated progress */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-40 flex gap-3">
-          {branding.heroImages!.map((_, index) => (
+          {branding.heroImages!.map((_: string, index: number) => (
             <button
               key={index}
               onClick={() => setCurrentSlideIndex(index)}

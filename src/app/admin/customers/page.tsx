@@ -42,6 +42,11 @@ const mockCustomers: Customer[] = [
     restaurantId: 'rest1',
     preferredLanguage: 'en',
     marketingConsent: true,
+    notificationPreferences: {
+      email: true,
+      sms: true,
+      push: false,
+    },
   },
   {
     id: '2',
@@ -58,6 +63,11 @@ const mockCustomers: Customer[] = [
     restaurantId: 'rest1',
     preferredLanguage: 'en',
     marketingConsent: true,
+    notificationPreferences: {
+      email: true,
+      sms: false,
+      push: true,
+    },
   },
   {
     id: '3',
@@ -74,6 +84,11 @@ const mockCustomers: Customer[] = [
     restaurantId: 'rest1',
     preferredLanguage: 'en',
     marketingConsent: false,
+    notificationPreferences: {
+      email: false,
+      sms: false,
+      push: false,
+    },
   },
 ];
 

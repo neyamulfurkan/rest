@@ -1,9 +1,5 @@
-// src/app/(customer)/menu/page.tsx
-
-'use client';
-
+import type { Metadata } from 'next';
 import React, { useState, useMemo } from 'react';
-import { useSettingsStore } from '@/store/settingsStore';
 import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -24,10 +20,186 @@ import type { MenuItemWithRelations } from '@/types';
 
 type SortOption = 'popular' | 'price-low-high' | 'price-high-low';
 
-export default function MenuPage() {
-  const { menuItems, categories, isLoading, error } = useMenu();
+// Generate metadata for SEO
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const { data: settings } = await response.json();
+    
+    const restaurantName = settings?.name || 'RestaurantOS';
+    const description = settings?.description || 'Browse our delicious menu';
+    const city = settings?.city || '';
+    const state = settings?.state || '';
+    const logoUrl = settings?.logoUrl;
+
+    return {
+      title: `Menu - ${restaurantName}${city ? ` | ${city}, ${state}` : ''}`,
+      description: `Explore our full menu at ${restaurantName}. Order online for delivery, pickup, or dine-in${city ? ` in ${city}, ${state}` : ''}.`,
+      keywords: [
+        restaurantName,
+        'menu',
+        'food menu',
+        'restaurant menu',
+        'order online',
+        city,
+        state,
+        'delivery menu',
+        'takeout menu',
+        'dine-in menu',
+      ].filter(Boolean),
+      alternates: {
+        canonical: '/menu',
+      },
+      openGraph: {
+        title: `Menu - ${restaurantName}`,
+        description: description,
+        type: 'website',
+        url: `${baseUrl}/menu`,
+        siteName: restaurantName,
+        images: logoUrl ? [{
+          url: logoUrl,
+          width: 1200,
+          height: 630,
+          alt: `${restaurantName} menu`,
+        }] : [],
+      },
+      robots: {
+        index: true,
+        follow: true,
+      },
+    };
+  } catch (error) {
+    console.error('Failed to generate menu metadata:', error);
+    return {
+      title: 'Menu - RestaurantOS',
+      description: 'Browse our delicious menu',
+    };
+  }
+}
+
+export default async function MenuPage() {
+  // Fetch settings and menu items server-side for SEO
+  let settings: any = {};
+  let initialMenuItems: any[] = [];
+  let initialCategories: any[] = [];
+  
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
+    // Fetch settings
+    const settingsResponse = await fetch(`${baseUrl}/api/settings`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const settingsData = await settingsResponse.json();
+    settings = settingsData.data || {};
+    
+    // Fetch menu items
+    const menuResponse = await fetch(`${baseUrl}/api/menu`, { cache: 'no-store' });
+    const menuData = await menuResponse.json();
+    initialMenuItems = menuData.data || [];
+    
+    // Fetch categories
+    const categoriesResponse = await fetch(`${baseUrl}/api/menu/categories`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const categoriesData = await categoriesResponse.json();
+    initialCategories = categoriesData.data || [];
+  } catch (error) {
+    console.error('Failed to fetch menu data:', error);
+  }
+
+  const restaurantName = settings?.name || 'RestaurantOS';
+
+  // Generate MenuSection JSON-LD
+  const menuSectionSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'MenuSection',
+    name: `${restaurantName} Menu`,
+    hasMenuItem: initialMenuItems.slice(0, 10).map((item: any) => ({
+      '@type': 'MenuItem',
+      name: item.name,
+      description: item.description || '',
+      offers: {
+        '@type': 'Offer',
+        price: item.price,
+        priceCurrency: 'USD',
+        availability: item.isAvailable ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      },
+      image: item.imageUrl || '',
+      suitableForDiet: [
+        ...(item.isVegetarian ? ['https://schema.org/VegetarianDiet'] : []),
+        ...(item.isVegan ? ['https://schema.org/VeganDiet'] : []),
+        ...(item.isGlutenFree ? ['https://schema.org/GlutenFreeDiet'] : []),
+      ],
+    })),
+  };
+
+  // Breadcrumb schema for SEO
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: process.env.NEXT_PUBLIC_APP_URL,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Menu',
+        item: `${process.env.NEXT_PUBLIC_APP_URL}/menu`,
+      },
+    ],
+  };
+
+  return (
+    <>
+      {/* JSON-LD Structured Data for Menu */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(menuSectionSchema),
+        }}
+      />
+      
+      {/* Breadcrumb Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema),
+        }}
+      />
+
+      <MenuPageClient 
+        restaurantName={restaurantName}
+        settings={settings}
+        initialMenuItems={initialMenuItems}
+        initialCategories={initialCategories}
+      />
+    </>
+  );
+}
+
+// Client Component for interactivity
+function MenuPageClient({ 
+  restaurantName, 
+  settings, 
+  initialMenuItems, 
+  initialCategories 
+}: { 
+  restaurantName: string; 
+  settings: any; 
+  initialMenuItems: any[]; 
+  initialCategories: any[] 
+}) {
+  'use client';
+
+  const { menuItems: clientMenuItems, categories: clientCategories, isLoading, error } = useMenu();
+  // Use server-side data initially, then client-side data
+  const menuItems = clientMenuItems || initialMenuItems;
+  const categories = clientCategories || initialCategories;
   const { addItem } = useCart();
-  const { branding, restaurantId } = useSettingsStore();
+  const branding = settings?.branding || {};
+  const restaurantId = settings?.id || 'rest123456789';
 
   // State
   const [searchQuery, setSearchQuery] = useState('');
@@ -153,10 +325,10 @@ export default function MenuPage() {
     );
   }
 
-  // Determine if search bar should be transparent
-  const shouldBeTransparent = branding.headerTransparentOverMedia && !isScrolled;
-
   return (
+    <>
+      {/* SEO: Hidden h1 for menu page */}
+      <h1 className="sr-only">{restaurantName} - Full Menu - Order Online</h1>
     <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
       {/* Search & Filter Bar - Sticky - COMPACT */}
       <div 
@@ -388,11 +560,12 @@ export default function MenuPage() {
       </div>
 
       {/* Menu Item Modal */}
-      <MenuItemModal
-        item={selectedItem}
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-      />
-    </div>
+        <MenuItemModal
+          item={selectedItem}
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+        />
+      </div>
+    </>
   );
 }

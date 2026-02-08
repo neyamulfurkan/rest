@@ -1019,58 +1019,48 @@ export default function AdminSettingsPage() {
 
   const testIntegration = async (type: string) => {
     try {
-      let endpoint = '';
-      let body = {};
-
-      switch (type) {
-        case 'sms':
-          endpoint = '/api/notifications/sms';
-          body = {
-            to: settings.phone,
-            message: 'Test SMS from RestaurantOS',
-          };
-          break;
-        case 'email':
-          endpoint = '/api/notifications/email';
-          body = {
-            to: settings.email,
-            subject: 'Test Email',
-            html: '<p>Test email from RestaurantOS</p>',
-            text: 'Test email from RestaurantOS',
-          };
-          break;
-        case 'printer':
-          toast({
-            title: 'Test Print',
-            description: 'Sending test print to kitchen printer...',
-          });
-          return;
-        default:
-          return;
+      if (!settingsStore.restaurantId) {
+        toast({
+          title: 'Error',
+          description: 'Restaurant ID not found. Please save settings first.',
+          variant: 'destructive',
+        });
+        return;
       }
 
-      const response = await fetch(endpoint, {
+      if (type === 'printer') {
+        toast({
+          title: 'Test Print',
+          description: 'Sending test print to kitchen printer...',
+        });
+        return;
+      }
+
+      const response = await fetch('/api/notifications/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          type: type,
+          restaurantId: settingsStore.restaurantId,
+        }),
       });
 
       const result = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !result.success) {
         throw new Error(result.error || 'Test failed');
       }
 
       toast({
-        title: 'Success',
-        description: result.message || `Test ${type} sent successfully`,
+        title: 'Success ✅',
+        description: `Test ${type} sent successfully! Check your ${type === 'sms' ? 'phone' : 'email'}.`,
       });
     } catch (error) {
       console.error(`Test ${type} error:`, error);
       toast({
-        title: 'Error',
+        title: 'Test Failed ❌',
         description: error instanceof Error ? error.message : `Failed to send test ${type}`,
         variant: 'destructive',
       });
