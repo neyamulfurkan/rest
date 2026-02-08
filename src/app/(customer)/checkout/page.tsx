@@ -946,13 +946,7 @@ return (
 
       {/* Stripe Card Input - Only visible when Stripe is selected */}
       {paymentMethod === PAYMENT_METHOD.STRIPE && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white rounded-2xl shadow-md p-6 space-y-4"
-        >
+        <div className="bg-white rounded-2xl shadow-md p-6 space-y-4">
           <div className="rounded-lg border-2 border-neutral-200 p-4">
             <label className="block text-sm font-medium text-neutral-700 mb-3">
               Card Details
@@ -974,7 +968,7 @@ return (
             </svg>
             <span>Your payment is secured by Stripe</span>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Tip Selection */}

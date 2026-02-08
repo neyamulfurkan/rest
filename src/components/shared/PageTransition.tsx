@@ -2,13 +2,12 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { ReactNode, useEffect, useState, useRef } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 
 interface PageTransitionProps {
   children: ReactNode;
 }
 
-// Simplified page hierarchy - only core routes
 const PAGE_LEVELS: Record<string, number> = {
   '/': 0,
   '/menu': 1,
@@ -25,22 +24,18 @@ const PAGE_LEVELS: Record<string, number> = {
 };
 
 function getPageLevel(path: string): number {
-  // Check exact match first
   if (PAGE_LEVELS[path] !== undefined) return PAGE_LEVELS[path];
-  
-  // Check if it starts with any known path
   for (const [key, value] of Object.entries(PAGE_LEVELS)) {
     if (path.startsWith(key + '/')) return value;
   }
-  
-  return -1; // Unknown
+  return -1;
 }
 
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname();
   const prevPathname = useRef(pathname);
   
-  // Calculate direction IMMEDIATELY, not in useEffect
+  // HOOKS MUST COME FIRST - before any conditional returns
   const currentLevel = getPageLevel(pathname);
   const prevLevel = getPageLevel(prevPathname.current);
   
@@ -49,17 +44,21 @@ export function PageTransition({ children }: PageTransitionProps) {
     direction = currentLevel > prevLevel ? 1 : -1;
   }
   
-  // Update prevPathname AFTER calculating direction
   useEffect(() => {
     prevPathname.current = pathname;
   }, [pathname]);
+
+  // NOW safe to conditionally return (after all hooks)
+  if (pathname === '/checkout') {
+    return <div className="min-h-screen relative">{children}</div>;
+  }
 
   const slideDistance = 100;
 
   const variants = {
     enter: (dir: number) => ({
       x: dir === 1 ? -slideDistance : dir === -1 ? slideDistance : 0,
-      opacity: 1,
+      opacity: 0,
     }),
     center: {
       x: 0,
@@ -67,7 +66,7 @@ export function PageTransition({ children }: PageTransitionProps) {
     },
     exit: (dir: number) => ({
       x: dir === 1 ? slideDistance : dir === -1 ? -slideDistance : 0,
-      opacity: 1,
+      opacity: 0,
     }),
   };
 
