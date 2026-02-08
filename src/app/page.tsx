@@ -181,16 +181,16 @@ export default async function HomePage() {
   );
 }
 
+'use client';
+
 // Client Component for interactivity
 function HomePageClient({ restaurantName, settings, content }: { restaurantName: string; settings: any; content: any }) {
-  'use client';
-  
   const router = useRouter();
   const { addItem } = useCart();
-  const [isClient, setIsClient] = React.useState(false);
-  const [isCartOpen, setIsCartOpen] = React.useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setIsClient(true);
   }, []);
 

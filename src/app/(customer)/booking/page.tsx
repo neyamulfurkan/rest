@@ -190,9 +190,10 @@ export default async function BookingPage() {
   );
 }
 
+'use client';
+
 // Client Component for interactivity
 function BookingPageClient({ restaurantName, city, state }: { restaurantName: string; city: string; state: string }) {
-  'use client';
   const { data: session } = useSession();
   const user = session?.user;
   const [selectedDate, setSelectedDate] = useState<Date>();

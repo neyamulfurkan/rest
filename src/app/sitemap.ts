@@ -6,8 +6,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   // Fetch menu items for dynamic URLs (optional - can add later)
-  // Menu items can be added to sitemap in future for individual item pages
-  // let menuItems: any[] = [];
+  let menuItems: any[] = [];
   
   try {
     const menuResponse = await fetch(`${baseUrl}/api/menu`, {
