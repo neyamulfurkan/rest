@@ -92,91 +92,20 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function HomePage() {
-  // Fetch settings server-side for SEO - NO CACHE for dynamic content
-  let settings: any = {};
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/settings`, { 
-      cache: 'no-store' // CRITICAL: Don't cache - we need fresh gallery/about data
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Settings API failed: ${response.status}`);
-    }
-    
-    const { data } = await response.json();
-    settings = data || {};
-    
-    // DEBUG: Log what we got from API
-    console.log('📄 Server Page.tsx - API returned:', {
-      name: settings?.name,
-      hasGalleryImages: !!settings?.galleryImages,
-      galleryImagesCount: Array.isArray(settings?.galleryImages) ? settings.galleryImages.length : 0,
-      showGalleryOnHome: settings?.showGalleryOnHome,
-      hasAboutStory: !!settings?.aboutStory,
-      hasAboutMission: !!settings?.aboutMission,
-      hasAboutValues: !!settings?.aboutValues,
-    });
-  } catch (error) {
-    console.error('Failed to fetch settings:', error);
-    // Use defaults on error
-    settings = {
-      name: 'RestaurantOS',
-      description: 'Experience culinary excellence',
-      city: '',
-      state: '',
-      galleryImages: [],
-      showGalleryOnHome: false,
-      aboutStory: null,
-      aboutMission: null,
-      aboutValues: null,
-    };
-  }
-
-  const restaurantName = settings?.name || 'RestaurantOS';
-  const city = settings?.city || '';
-  const state = settings?.state || '';
-  const content = {
-    story: settings?.aboutStory || null,
-    mission: settings?.aboutMission || null,
-    values: settings?.aboutValues || null,
-  };
+export default function HomePage() {
+  // NO server-side fetch - let client handle it to avoid Vercel build errors
+  // The client component will fetch settings on mount
+  const settings = null;
+  const restaurantName = 'RestaurantOS';
+  const content = null;
   
-  // DEBUG: Log final data being passed to client
-  console.log('📄 Server Page.tsx - Passing to client:', {
-    restaurantName,
-    settingsKeys: Object.keys(settings),
-    galleryImagesLength: settings?.galleryImages?.length || 0,
-    showGalleryOnHome: settings?.showGalleryOnHome,
-    contentStory: content.story?.substring(0, 50),
-    contentMission: content.mission?.substring(0, 50),
-    contentValues: content.values?.substring(0, 50),
-  });
-  
-  // Generate JSON-LD structured data for Google
+  // Generate JSON-LD structured data for Google (minimal version, client will enhance)
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Restaurant',
-    name: restaurantName,
-    description: settings?.description || 'Experience culinary excellence',
-    image: settings?.logoUrl || '',
+    name: 'RestaurantOS',
+    description: 'Experience culinary excellence',
     url: process.env.NEXT_PUBLIC_APP_URL,
-    telephone: settings?.phone || '',
-    email: settings?.email || '',
-    address: settings?.address ? {
-      '@type': 'PostalAddress',
-      streetAddress: settings.address,
-      addressLocality: city,
-      addressRegion: state,
-      postalCode: settings.zipCode || '',
-      addressCountry: settings.country || 'US',
-    } : undefined,
-    geo: settings?.latitude && settings?.longitude ? {
-      '@type': 'GeoCoordinates',
-      latitude: settings.latitude,
-      longitude: settings.longitude,
-    } : undefined,
     priceRange: '$$',
     servesCuisine: 'Multiple cuisines',
     acceptsReservations: true,

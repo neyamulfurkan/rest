@@ -17,9 +17,12 @@ import { useRouter } from 'next/navigation';
 import { MenuItemWithRelations } from '@/types';
 import { useCart } from '@/hooks/useCart';
 
-export function HomePageClient({ restaurantName, settings, content }: { restaurantName: string; settings: any; content: any }) {
+export function HomePageClient({ restaurantName: initialRestaurantName, settings: initialSettings, content: initialContent }: { restaurantName: string; settings: any; content: any }) {
   const router = useRouter();
   const { addItem } = useCart();
+  const [restaurantName, setRestaurantName] = useState(initialRestaurantName);
+  const [settings, setSettings] = useState(initialSettings);
+  const [content, setContent] = useState(initialContent);
   const [isClient, setIsClient] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [popularItems, setPopularItems] = useState<MenuItemWithRelations[]>([]);
@@ -27,12 +30,31 @@ export function HomePageClient({ restaurantName, settings, content }: { restaura
   useEffect(() => {
     setIsClient(true);
     
-    // Fetch popular items ONCE on mount
+    // Fetch settings if not provided
+    const fetchSettings = async () => {
+      if (!initialSettings) {
+        try {
+          const response = await fetch('/api/settings');
+          if (response.ok) {
+            const { data } = await response.json();
+            setSettings(data);
+            setRestaurantName(data?.name || 'RestaurantOS');
+            setContent({
+              story: data?.aboutStory || null,
+              mission: data?.aboutMission || null,
+              values: data?.aboutValues || null,
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch settings:', error);
+        }
+      }
+    };
+    
+    // Fetch popular items
     const fetchItems = async () => {
       try {
-        const response = await fetch('/api/menu?popular=true&limit=8', {
-          cache: 'force-cache'
-        });
+        const response = await fetch('/api/menu?popular=true&limit=8');
         if (response.ok) {
           const data = await response.json();
           setPopularItems(data.data || []);
@@ -42,8 +64,9 @@ export function HomePageClient({ restaurantName, settings, content }: { restaura
       }
     };
     
+    fetchSettings();
     fetchItems();
-  }, []); // Run ONCE only
+  }, [initialSettings]);
 
   const handleAddToCart = (item: MenuItemWithRelations) => {
     addItem({
