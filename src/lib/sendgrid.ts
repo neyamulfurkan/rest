@@ -1,6 +1,5 @@
 // src/lib/sendgrid.ts
 
-import sgMail from '@sendgrid/mail';
 import { prisma } from '@/lib/prisma';
 
 export async function getSendGridConfig(restaurantId: string): Promise<{
@@ -45,6 +44,9 @@ export async function getSendGridConfig(restaurantId: string): Promise<{
       return null;
     }
 
+    // Dynamic import to avoid loading SendGrid when not configured
+    const sgMail = (await import('@sendgrid/mail')).default;
+    
     // Initialize SendGrid with API key
     sgMail.setApiKey(apiKey);
 

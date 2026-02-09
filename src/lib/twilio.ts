@@ -1,7 +1,6 @@
 // src/lib/twilio.ts
 
 import { prisma } from '@/lib/prisma';
-import twilio from 'twilio';
 
 export async function getTwilioConfig(restaurantId: string): Promise<{
   client: any;
@@ -48,6 +47,9 @@ export async function getTwilioConfig(restaurantId: string): Promise<{
       return null;
     }
 
+    // Dynamic import to avoid loading Twilio when not configured
+    const twilio = (await import('twilio')).default;
+    
     // Initialize real Twilio client
     const client = twilio(accountSid, authToken);
 
