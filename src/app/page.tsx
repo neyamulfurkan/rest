@@ -116,10 +116,17 @@ export default async function HomePage() {
   const city = settings?.city || '';
   const state = settings?.state || '';
   const content = {
-    story: settings?.aboutStory || undefined,
-    mission: settings?.aboutMission || undefined,
-    values: settings?.aboutValues || undefined,
+    story: settings?.aboutStory || null,
+    mission: settings?.aboutMission || null,
+    values: settings?.aboutValues || null,
   };
+  
+  console.log('📄 Page.tsx - Settings:', {
+    restaurantName,
+    hasGallery: settings?.galleryImages?.length || 0,
+    showGalleryOnHome: settings?.showGalleryOnHome,
+    hasAbout: !!(content.story || content.mission || content.values)
+  });
   // Generate JSON-LD structured data for Google
   const structuredData = {
     '@context': 'https://schema.org',

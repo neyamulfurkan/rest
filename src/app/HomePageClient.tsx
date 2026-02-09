@@ -292,20 +292,20 @@ export function HomePageClient({ restaurantName, settings, content }: { restaura
       />
 
       {/* Gallery Section */}
-      {isClient && settings?.showGalleryOnHome && (settings?.galleryImages || []).length > 0 && (
+      {isClient && settings && settings.showGalleryOnHome && settings.galleryImages && settings.galleryImages.length > 0 && (
         <GallerySection 
-          images={settings?.galleryImages || []} 
-          categories={settings?.galleryCategories || ['All']}
+          images={settings.galleryImages} 
+          categories={settings.galleryCategories || ['All']}
         />
       )}
 
       {/* About Section */}
-      {isClient && (content.story || content.mission || content.values) && (
+      {isClient && (content?.story || content?.mission || content?.values) && (
         <AboutSection
           content={{
-            story: content.story,
-            mission: content.mission,
-            values: content.values,
+            story: content?.story || '',
+            mission: content?.mission || '',
+            values: content?.values || '',
           }}
         />
       )}

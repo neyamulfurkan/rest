@@ -452,23 +452,24 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   loadSettings: async () => {
     // Prevent multiple simultaneous loads - CRITICAL FIX
     const currentState = get();
-    if (currentState.isLoading || currentState.isLoaded) {
-      console.log('⏸️ Settings already loading or loaded, skipping...');
+    if (currentState.isLoading) {
+      console.log('⏸️ Settings already loading, skipping...');
       return;
     }
     
     set({ isLoading: true, error: null });
     
     // INSTANT: Try loading from localStorage first (no API wait)
+    let hasCachedData = false;
     try {
       const cached = localStorage.getItem('restaurant-settings');
       if (cached) {
         const cachedData = JSON.parse(cached);
         if (cachedData.branding) {
           get().setSettings(cachedData);
-          set({ isLoaded: true, isLoading: false });
-          console.log('✅ Loaded settings from cache');
-          return; // CRITICAL: Return early if cache is valid
+          hasCachedData = true;
+          console.log('✅ Loaded settings from cache, fetching fresh data...');
+          // DON'T RETURN - Continue to fetch fresh data
         }
       }
     } catch (e) {
@@ -477,7 +478,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     
     try {
       const response = await fetch('/api/settings', {
-        cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -486,6 +486,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Settings API error:', response.status, errorText);
+        
+        // If we have cached data, use it and don't throw error
+        if (hasCachedData) {
+          set({ isLoaded: true, isLoading: false });
+          console.log('⚠️ API failed but using cached data');
+          return;
+        }
+        
         throw new Error(`Failed to load settings: ${response.status} ${errorText}`);
       }
       
@@ -494,6 +502,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       if (data.success && data.data) {
         get().setSettings(data.data);
         set({ isLoaded: true, isLoading: false });
+        console.log('✅ Loaded fresh settings from API');
         
         // Force apply CSS variables immediately after loading
         if (typeof window !== 'undefined') {
