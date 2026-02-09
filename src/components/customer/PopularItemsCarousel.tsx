@@ -24,38 +24,38 @@ export default function PopularItemsCarousel({
   const [isLoading, setIsLoading] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [titleInView, setTitleInView] = useState(false);
+  const hasInitialized = useRef(false);
 
-  // Use initial items from SSR or fetch on mount - ONCE ONLY
   useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     if (initialItems.length > 0) {
       setPopularItems(initialItems);
       setIsLoading(false);
-      return; // CRITICAL: Prevent fetch if we have initial items
+      return;
     }
-    
-    // Only fetch if we don't have items AND haven't loaded yet
-    if (popularItems.length === 0 && isLoading) {
-      const fetchPopularItems = async () => {
-        try {
-          const response = await fetch('/api/menu?popular=true&limit=8', {
-            cache: 'force-cache',
-            next: { revalidate: 300 } // Cache for 5 minutes
-          });
-          if (!response.ok) throw new Error('Failed to fetch popular items');
-          
-          const data = await response.json();
-          setPopularItems(data.data || []);
-        } catch (error) {
-          console.error('Error fetching popular items:', error);
-          setPopularItems([]);
-        } finally {
-          setIsLoading(false);
-        }
-      };
 
-      fetchPopularItems();
-    }
-  }, []); // CRITICAL: Empty dependency array - run ONCE only
+    const fetchPopularItems = async () => {
+      try {
+        const response = await fetch('/api/menu?popular=true&limit=8', {
+          cache: 'force-cache'
+        });
+        if (!response.ok) throw new Error('Failed to fetch popular items');
+        
+        const data = await response.json();
+        setPopularItems(data.data || []);
+      } catch (error) {
+        console.error('Error fetching popular items:', error);
+        setPopularItems([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPopularItems();
+  }, [initialItems]);
 
   // Auto-scroll functionality
   useEffect(() => {
@@ -146,8 +146,6 @@ export default function PopularItemsCarousel({
     return null;
   }
 
-  const [titleInView, setTitleInView] = useState(false);
-
   return (
     <section className="py-8 md:py-12 overflow-hidden" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
       <div className="container mx-auto px-2 sm:px-4 max-w-7xl" itemScope itemType="https://schema.org/ItemList">
@@ -160,14 +158,15 @@ export default function PopularItemsCarousel({
           style={{ color: 'hsl(var(--foreground))' }} 
           itemProp="name"
           ref={(node) => {
-            if (!node) return;
+            if (!node || titleInView) return;
             const observer = new IntersectionObserver(
               ([entry]) => {
-                if (entry.isIntersecting && !titleInView) {
+                if (entry.isIntersecting) {
                   setTitleInView(true);
+                  observer.disconnect();
                 }
               },
-              { threshold: 0.2, rootMargin: '0px 0px -200px 0px' }
+              { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
             );
             observer.observe(node);
             return () => observer.disconnect();

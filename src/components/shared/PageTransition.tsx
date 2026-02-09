@@ -34,8 +34,8 @@ function getPageLevel(path: string): number {
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname();
   const prevPathname = useRef(pathname);
+  const isFirstRender = useRef(true);
   
-  // HOOKS MUST COME FIRST - before any conditional returns
   const currentLevel = getPageLevel(pathname);
   const prevLevel = getPageLevel(prevPathname.current);
   
@@ -45,15 +45,17 @@ export function PageTransition({ children }: PageTransitionProps) {
   }
   
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+    }
     prevPathname.current = pathname;
   }, [pathname]);
 
-  // NOW safe to conditionally return (after all hooks)
   if (pathname === '/checkout') {
     return <div className="min-h-screen relative">{children}</div>;
   }
 
-  const slideDistance = 100;
+  const slideDistance = 50;
 
   const variants = {
     enter: (dir: number) => ({
@@ -71,17 +73,17 @@ export function PageTransition({ children }: PageTransitionProps) {
   };
 
   return (
-    <AnimatePresence mode="popLayout" initial={false}>
+    <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={pathname}
         custom={direction}
         variants={variants}
-        initial="enter"
+        initial={isFirstRender.current ? false : "enter"}
         animate="center"
         exit="exit"
         transition={{
-          duration: 0.2,
-          ease: [0.4, 0, 0.2, 1],
+          duration: 0.25,
+          ease: [0.25, 0.1, 0.25, 1],
         }}
         className="min-h-screen relative"
       >

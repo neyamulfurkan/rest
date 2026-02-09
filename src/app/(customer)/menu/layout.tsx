@@ -6,7 +6,8 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/settings`, {
-      cache: 'no-store',
+      cache: 'force-cache',
+      next: { revalidate: 300 }
     });
     
     const { data: settings } = await response.json();

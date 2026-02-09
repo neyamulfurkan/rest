@@ -15,14 +15,9 @@ interface GallerySectionProps {
 export function GallerySection({ images, categories = ['All'] }: GallerySectionProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showAllModal, setShowAllModal] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted || !images || images.length === 0) {
+  if (!images || images.length === 0) {
     return null;
   }
 

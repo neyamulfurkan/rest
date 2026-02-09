@@ -25,7 +25,7 @@ export default function MenuItemCard({
   const [rating, setRating] = useState<{ average: number; count: number } | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [isInView, setIsInView] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
     fetch(`/api/menu/${item.id}/reviews`)
@@ -67,7 +67,7 @@ export default function MenuItemCard({
         "hover:shadow-2xl",
         "border-0 rounded-2xl sm:rounded-3xl",
         !item.isAvailable && "opacity-75",
-        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+        hasAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
       )}
       style={{ 
         backgroundColor: 'hsl(var(--card))',
@@ -77,14 +77,15 @@ export default function MenuItemCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       ref={(node) => {
-        if (!node) return;
+        if (!node || hasAnimated) return;
         const observer = new IntersectionObserver(
           ([entry]) => {
-            if (entry.isIntersecting && !isInView) {
-              setIsInView(true);
+            if (entry.isIntersecting) {
+              setHasAnimated(true);
+              observer.disconnect();
             }
           },
-          { threshold: 0.15, rootMargin: '0px 0px -150px 0px' }
+          { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
         );
         observer.observe(node);
         return () => observer.disconnect();
