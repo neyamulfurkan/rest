@@ -64,9 +64,8 @@ export function AboutSection({ content }: AboutSectionProps) {
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.3 }}
+          viewport={{ once: true, amount: 0.2, margin: '0px 0px -200px 0px' }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
           className="text-center mb-20"
         >
@@ -95,7 +94,7 @@ export function AboutSection({ content }: AboutSectionProps) {
                 key={index}
                 initial={{ opacity: 0, x: isEven ? -80 : 80 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: false, amount: 0.2, margin: '-100px' }}
+                viewport={{ once: true, amount: 0.15, margin: '0px 0px -250px 0px' }}
                 transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
                 className={`flex flex-col ${
                   isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'
@@ -139,14 +138,14 @@ export function AboutSection({ content }: AboutSectionProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.3, margin: '-80px' }}
+                  viewport={{ once: true, amount: 0.2, margin: '0px 0px -200px 0px' }}
                   transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                   className="w-full lg:w-1/2 space-y-6"
                 >
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: false, amount: 0.5 }}
+                    viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 0.5, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
                     className="inline-flex items-center gap-3 px-5 py-2 rounded-full"
                     style={{
@@ -182,7 +181,7 @@ export function AboutSection({ content }: AboutSectionProps) {
                   <motion.div
                     initial={{ width: 0 }}
                     whileInView={{ width: '100%' }}
-                    viewport={{ once: false, amount: 0.5 }}
+                    viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 0.8, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
                     className="h-1 rounded-full max-w-xs"
                     style={{ backgroundColor: section.color }}

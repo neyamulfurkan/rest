@@ -59,11 +59,6 @@ export default function MenuItemCard({
 
   const dietaryBadges = getDietaryBadges();
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsInView(true), 50);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <Card
       className={cn(
@@ -72,7 +67,7 @@ export default function MenuItemCard({
         "hover:shadow-2xl",
         "border-0 rounded-2xl sm:rounded-3xl",
         !item.isAvailable && "opacity-75",
-        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
       )}
       style={{ 
         backgroundColor: 'hsl(var(--card))',
@@ -85,13 +80,11 @@ export default function MenuItemCard({
         if (!node) return;
         const observer = new IntersectionObserver(
           ([entry]) => {
-            if (entry.isIntersecting) {
+            if (entry.isIntersecting && !isInView) {
               setIsInView(true);
-            } else {
-              setIsInView(false);
             }
           },
-          { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
+          { threshold: 0.15, rootMargin: '0px 0px -150px 0px' }
         );
         observer.observe(node);
         return () => observer.disconnect();
