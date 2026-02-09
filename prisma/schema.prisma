@@ -167,8 +167,9 @@ model Customer {
   marketingConsent          Boolean    @default(false)
   notificationPreferences   Json?      @default("{\"email\":true,\"sms\":true}")
   totalOrders               Int        @default(0)
-  totalSpent        Float      @default(0)
-  createdAt         DateTime   @default(now())
+  totalSpent                Float      @default(0)
+  reviewPromptsShown        Int        @default(0)
+  createdAt                 DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
   addresses         Address[]
   bookings          Booking[]

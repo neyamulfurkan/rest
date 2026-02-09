@@ -37,6 +37,7 @@ export async function GET(
           marketingConsent: true,
           totalOrders: true,
           totalSpent: true,
+          reviewPromptsShown: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -165,7 +166,7 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json();
-    const { name, email, phone, profileImage } = body;
+    const { name, email, phone, profileImage, reviewPromptsShown } = body;
 
     // Validate required fields
     if (!name || !email) {
@@ -221,6 +222,7 @@ export async function PATCH(
         email,
         phone: phone || null,
         profileImage: profileImage || null,
+        ...(typeof reviewPromptsShown === 'number' && { reviewPromptsShown }),
       },
       select: {
         id: true,
@@ -232,6 +234,7 @@ export async function PATCH(
         preferredLanguage: true,
         totalOrders: true,
         totalSpent: true,
+        reviewPromptsShown: true,
         createdAt: true,
         updatedAt: true,
       },

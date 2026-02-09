@@ -5,15 +5,25 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
+    const { searchParams } = new URL(request.url);
+    const orderId = searchParams.get('orderId');
 
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
+    // Allow customers to fetch reviews for their orders
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
+    const where: any = {};
+    
+    if (orderId) {
+      where.orderId = orderId;
+    }
+
     const reviews = await prisma.review.findMany({
+      where,
       include: {
         customer: {
           select: {

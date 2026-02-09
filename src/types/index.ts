@@ -117,6 +117,7 @@ export interface CustomerWithStats {
   marketingConsent: boolean;
   totalOrders: number;
   totalSpent: number;
+  reviewPromptsShown: number;
   createdAt: Date;
   updatedAt: Date;
   orders?: Array<{
