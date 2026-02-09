@@ -450,10 +450,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   
   loadSettings: async () => {
-    // Prevent multiple simultaneous loads
-    if (get().isLoading) {
+    // Prevent multiple simultaneous loads - CRITICAL FIX
+    const currentState = get();
+    if (currentState.isLoading || currentState.isLoaded) {
+      console.log('⏸️ Settings already loading or loaded, skipping...');
       return;
     }
+    
+    set({ isLoading: true, error: null });
     
     // INSTANT: Try loading from localStorage first (no API wait)
     try {
@@ -462,15 +466,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         const cachedData = JSON.parse(cached);
         if (cachedData.branding) {
           get().setSettings(cachedData);
-          set({ isLoaded: true });
-          // Continue loading from API in background to get fresh data
+          set({ isLoaded: true, isLoading: false });
+          console.log('✅ Loaded settings from cache');
+          return; // CRITICAL: Return early if cache is valid
         }
       }
     } catch (e) {
       console.log('No cached settings available');
     }
-    
-    set({ isLoading: true, error: null });
     
     try {
       const response = await fetch('/api/settings', {

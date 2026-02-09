@@ -91,11 +91,25 @@ export default async function HomePage() {
   let settings: any = {};
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const response = await fetch(`${baseUrl}/api/settings`, { 
+      cache: 'force-cache'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Settings API failed: ${response.status}`);
+    }
+    
     const { data } = await response.json();
     settings = data || {};
   } catch (error) {
     console.error('Failed to fetch settings:', error);
+    // Use defaults on error
+    settings = {
+      name: 'RestaurantOS',
+      description: 'Experience culinary excellence',
+      city: '',
+      state: '',
+    };
   }
 
   const restaurantName = settings?.name || 'RestaurantOS';

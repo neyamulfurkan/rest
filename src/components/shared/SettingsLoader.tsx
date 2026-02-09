@@ -7,19 +7,21 @@ export function SettingsLoader() {
   const store = useSettingsStore();
 
   useEffect(() => {
-    // NON-BLOCKING: Load settings in background without blocking render
+    // Load settings ONCE on mount only
     if (!store.isLoaded && !store.isLoading) {
-      // Start loading immediately (non-blocking)
+      console.log('🔄 SettingsLoader: Initiating settings load...');
       store.loadSettings().catch((error) => {
         console.error('❌ SettingsLoader: Failed to load settings:', error);
       });
     }
-    
-    // Apply colors immediately if already loaded
+  }, []); // CRITICAL: Empty array - run ONCE only
+
+  useEffect(() => {
+    // Apply colors when loaded
     if (store.isLoaded) {
       applyColors();
     }
-  }, [store.isLoaded, store.isLoading, store]);
+  }, [store.isLoaded]); // Only re-run when isLoaded changes
 
   // Apply all color CSS variables
   const applyColors = () => {

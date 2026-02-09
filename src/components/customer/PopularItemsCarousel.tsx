@@ -24,16 +24,22 @@ export default function PopularItemsCarousel({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Use initial items from SSR or fetch on mount
+  // Use initial items from SSR or fetch on mount - ONCE ONLY
   useEffect(() => {
     if (initialItems.length > 0) {
       setPopularItems(initialItems);
       setIsLoading(false);
-    } else {
+      return; // CRITICAL: Prevent fetch if we have initial items
+    }
+    
+    // Only fetch if we don't have items AND haven't loaded yet
+    if (popularItems.length === 0 && isLoading) {
       const fetchPopularItems = async () => {
         try {
-          setIsLoading(true);
-          const response = await fetch('/api/menu?popular=true&limit=8');
+          const response = await fetch('/api/menu?popular=true&limit=8', {
+            cache: 'force-cache',
+            next: { revalidate: 300 } // Cache for 5 minutes
+          });
           if (!response.ok) throw new Error('Failed to fetch popular items');
           
           const data = await response.json();
@@ -48,7 +54,7 @@ export default function PopularItemsCarousel({
 
       fetchPopularItems();
     }
-  }, [initialItems]);
+  }, []); // CRITICAL: Empty dependency array - run ONCE only
 
   // Auto-scroll functionality
   useEffect(() => {

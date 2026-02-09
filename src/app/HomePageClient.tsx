@@ -22,10 +22,28 @@ export function HomePageClient({ restaurantName, settings, content }: { restaura
   const { addItem } = useCart();
   const [isClient, setIsClient] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [popularItems, setPopularItems] = useState<MenuItemWithRelations[]>([]);
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    
+    // Fetch popular items ONCE on mount
+    const fetchItems = async () => {
+      try {
+        const response = await fetch('/api/menu?popular=true&limit=8', {
+          cache: 'force-cache'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPopularItems(data.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch popular items:', error);
+      }
+    };
+    
+    fetchItems();
+  }, []); // Run ONCE only
 
   const handleAddToCart = (item: MenuItemWithRelations) => {
     addItem({
@@ -270,6 +288,7 @@ export function HomePageClient({ restaurantName, settings, content }: { restaura
       <PopularItemsCarousel
         onAddToCart={handleAddToCart}
         onItemClick={handleItemClick}
+        initialItems={popularItems}
       />
 
       {/* Gallery Section */}
