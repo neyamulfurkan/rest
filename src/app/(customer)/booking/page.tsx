@@ -188,6 +188,8 @@ export default async function BookingPage() {
 }
 
 // Client Component for interactivity
+'use client';
+
 function BookingPageClient({ restaurantName, city, state }: { restaurantName: string; city: string; state: string }) {
   const { data: session } = useSession();
   const user = session?.user;

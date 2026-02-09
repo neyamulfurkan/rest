@@ -180,6 +180,8 @@ export default async function MenuPage() {
 }
 
 // Client Component for interactivity
+'use client';
+
 function MenuPageClient({ 
   restaurantName, 
   settings, 
@@ -191,7 +193,6 @@ function MenuPageClient({
   initialMenuItems: any[]; 
   initialCategories: any[] 
 }) {
-  'use client';
   const { menuItems: clientMenuItems, categories: clientCategories, isLoading, error } = useMenu();
   // Use server-side data initially, then client-side data
   const menuItems = clientMenuItems || initialMenuItems;
