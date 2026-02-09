@@ -3,17 +3,11 @@
 import sgMail from '@sendgrid/mail';
 import { prisma } from '@/lib/prisma';
 
-/**
- * Get SendGrid configuration for a specific restaurant
- * @param restaurantId - Restaurant ID
- * @returns SendGrid client and from email, or null if not configured
- */
 export async function getSendGridConfig(restaurantId: string): Promise<{
-  client: typeof sgMail;
+  client: any;
   fromEmail: string;
 } | null> {
   try {
-    // Fetch restaurant settings from database
     const restaurant = await prisma.restaurant.findUnique({
       where: { id: restaurantId },
       select: {
@@ -32,11 +26,9 @@ export async function getSendGridConfig(restaurantId: string): Promise<{
       return null;
     }
 
-    // Extract settings
     const apiKeySetting = restaurant.settings.find(s => s.key === 'sendgridApiKey');
     const fromEmailSetting = restaurant.settings.find(s => s.key === 'sendgridFromEmail');
-
-    // Parse JSON values (settings are stored as JSON strings)
+    
     let apiKey: string | null = null;
     let fromEmail: string | null = null;
 
@@ -53,12 +45,11 @@ export async function getSendGridConfig(restaurantId: string): Promise<{
       return null;
     }
 
-    // Create a new SendGrid client instance for this restaurant
-    const client = require('@sendgrid/mail');
-    client.setApiKey(apiKey);
+    // Initialize SendGrid with API key
+    sgMail.setApiKey(apiKey);
 
     return {
-      client,
+      client: sgMail,
       fromEmail
     };
   } catch (error) {
@@ -67,7 +58,6 @@ export async function getSendGridConfig(restaurantId: string): Promise<{
   }
 }
 
-// Legacy export for backward compatibility (will log warning)
-export default sgMail;
+export default null;
 export const FROM_EMAIL = 'DEPRECATED_USE_getSendGridConfig';
 export const isSendGridConfigured = false;

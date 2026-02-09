@@ -128,6 +128,14 @@ export async function GET(_request: NextRequest) {
       cloudinaryApiSecret: settingsObject.cloudinaryApiSecret || null,
       cloudinaryAutoOptimize: settingsObject.cloudinaryAutoOptimize !== false,
       cloudinaryAutoFormat: settingsObject.cloudinaryAutoFormat !== false,
+      twilioAccountSid: settingsObject.twilioAccountSid || null,
+      twilioAuthToken: settingsObject.twilioAuthToken || null,
+      twilioPhoneNumber: settingsObject.twilioPhoneNumber || null,
+      sendgridApiKey: settingsObject.sendgridApiKey || null,
+      sendgridFromEmail: settingsObject.sendgridFromEmail || null,
+      kitchenPrinterIp: settingsObject.kitchenPrinterIp || null,
+      googleMapsApiKey: settingsObject.googleMapsApiKey || null,
+      googleAnalyticsId: settingsObject.googleAnalyticsId || null,
     };
 
     return NextResponse.json(

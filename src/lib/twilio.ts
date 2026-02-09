@@ -1,19 +1,13 @@
 // src/lib/twilio.ts
 
-import twilio from 'twilio';
 import { prisma } from '@/lib/prisma';
+import twilio from 'twilio';
 
-/**
- * Get Twilio configuration for a specific restaurant
- * @param restaurantId - Restaurant ID
- * @returns Twilio client and phone number, or null if not configured
- */
 export async function getTwilioConfig(restaurantId: string): Promise<{
-  client: ReturnType<typeof twilio>;
+  client: any;
   phoneNumber: string;
 } | null> {
   try {
-    // Fetch restaurant settings from database
     const restaurant = await prisma.restaurant.findUnique({
       where: { id: restaurantId },
       select: {
@@ -32,12 +26,10 @@ export async function getTwilioConfig(restaurantId: string): Promise<{
       return null;
     }
 
-    // Extract settings
     const accountSidSetting = restaurant.settings.find(s => s.key === 'twilioAccountSid');
     const authTokenSetting = restaurant.settings.find(s => s.key === 'twilioAuthToken');
     const phoneNumberSetting = restaurant.settings.find(s => s.key === 'twilioPhoneNumber');
-
-    // Parse JSON values (settings are stored as JSON strings)
+    
     let accountSid: string | null = null;
     let authToken: string | null = null;
     let phoneNumber: string | null = null;
@@ -56,7 +48,7 @@ export async function getTwilioConfig(restaurantId: string): Promise<{
       return null;
     }
 
-    // Create a new Twilio client instance for this restaurant
+    // Initialize real Twilio client
     const client = twilio(accountSid, authToken);
 
     return {
@@ -69,7 +61,6 @@ export async function getTwilioConfig(restaurantId: string): Promise<{
   }
 }
 
-// Legacy exports for backward compatibility (will log warning)
 export const twilioClient = null;
 export const TWILIO_PHONE_NUMBER = 'DEPRECATED_USE_getTwilioConfig';
 export const isTwilioConfigured = false;

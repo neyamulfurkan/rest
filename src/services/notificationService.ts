@@ -62,6 +62,18 @@ export async function sendSMS(
     
     if (!twilioConfig) {
       console.warn(`Twilio not configured for restaurant ${restaurantId}, skipping SMS`);
+      
+      // Track failed notification
+      await prisma.notification.create({
+        data: {
+          restaurantId,
+          type: 'ORDER_STATUS_UPDATE',
+          recipient: formattedPhone,
+          message,
+          isSent: false,
+        },
+      }).catch(err => console.error('Failed to track notification:', err));
+      
       return {
         success: false,
         error: 'Twilio is not configured for this restaurant. Please configure it in Settings > Notifications.',
@@ -77,7 +89,7 @@ export async function sendSMS(
 
     console.log(`SMS sent successfully to ${formattedPhone}, SID: ${result.sid}`);
 
-    // Track notification in database
+    // Track successful notification
     await prisma.notification.create({
       data: {
         restaurantId: restaurantId,
@@ -156,6 +168,19 @@ export async function sendEmail(
     
     if (!sendGridConfig) {
       console.warn(`SendGrid not configured for restaurant ${restaurantId}, skipping email`);
+      
+      // Track failed notification
+      await prisma.notification.create({
+        data: {
+          restaurantId,
+          type: 'ORDER_CONFIRMATION',
+          recipient: to,
+          subject,
+          message: html,
+          isSent: false,
+        },
+      }).catch(err => console.error('Failed to track notification:', err));
+      
       return {
         success: false,
         error: 'SendGrid is not configured for this restaurant. Please configure it in Settings > Notifications.',
@@ -175,7 +200,7 @@ export async function sendEmail(
 
     console.log(`Email sent successfully to ${to}`);
 
-    // Track notification in database
+    // Track successful notification
     await prisma.notification.create({
       data: {
         restaurantId: restaurantId,

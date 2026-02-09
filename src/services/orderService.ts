@@ -108,6 +108,30 @@ export async function createOrder(data: CreateOrderRequest): Promise<OrderWithRe
     // Generate order number
     const orderNumber = await generateOrderNumber();
 
+    // CRITICAL FIX: Fetch menu items BEFORE transaction to avoid timeout
+    const menuItemsToCheck = await prisma.menuItem.findMany({
+      where: {
+        id: { in: data.items.map(item => item.menuItemId) },
+      },
+      select: {
+        id: true,
+        trackInventory: true,
+        stockQuantity: true,
+      },
+    });
+
+    // Create inventory updates map
+    const inventoryUpdates = new Map<string, number>();
+    for (const item of data.items) {
+      const menuItem = menuItemsToCheck.find(m => m.id === item.menuItemId);
+      if (menuItem?.trackInventory && menuItem.stockQuantity !== null) {
+        inventoryUpdates.set(
+          item.menuItemId,
+          Math.max(0, menuItem.stockQuantity - item.quantity)
+        );
+      }
+    }
+
     // Create order with items and status history in a transaction
     const order = await prisma.$transaction(async (tx) => {
       // Create the order
@@ -191,25 +215,31 @@ export async function createOrder(data: CreateOrderRequest): Promise<OrderWithRe
         },
       });
 
-      // Update inventory if items track inventory
-      for (const item of data.items) {
-        const menuItem = await tx.menuItem.findUnique({
-          where: { id: item.menuItemId },
-          select: { trackInventory: true, stockQuantity: true },
-        });
-
-        if (menuItem?.trackInventory && menuItem.stockQuantity !== null) {
-          await tx.menuItem.update({
-            where: { id: item.menuItemId },
-            data: {
-              stockQuantity: Math.max(0, menuItem.stockQuantity - item.quantity),
-            },
-          });
-        }
+      // Update inventory using pre-calculated values (no queries inside transaction)
+      if (inventoryUpdates.size > 0) {
+        const updatePromises = Array.from(inventoryUpdates.entries()).map(([menuItemId, newStock]) =>
+          tx.menuItem.update({
+            where: { id: menuItemId },
+            data: { stockQuantity: newStock },
+          })
+        );
+        await Promise.all(updatePromises);
       }
 
       return newOrder;
+    }, {
+      maxWait: 5000, // Wait max 5s to acquire connection
+      timeout: 10000, // Timeout after 10s
     });
+
+    // Send order confirmation notifications
+    try {
+      const { sendOrderConfirmation } = await import('./notificationService');
+      await sendOrderConfirmation(order as OrderWithRelations);
+    } catch (notifError) {
+      console.error('Failed to send order notifications:', notifError);
+      // Don't fail the order creation if notification fails
+    }
 
     return order as OrderWithRelations;
   } catch (error) {
@@ -253,6 +283,18 @@ export async function updateOrderStatus(
 
       return updatedOrder;
     });
+
+    // Send status update notification
+    try {
+      const fullOrder = await getOrderById(orderId);
+      if (fullOrder) {
+        const { sendOrderStatusUpdate } = await import('./notificationService');
+        await sendOrderStatusUpdate(fullOrder, statusUpdate.status);
+      }
+    } catch (notifError) {
+      console.error('Failed to send status update notification:', notifError);
+      // Don't fail the status update if notification fails
+    }
 
     return order;
   } catch (error) {
@@ -460,6 +502,9 @@ export async function cancelOrder(
       });
 
       return cancelledOrder;
+    }, {
+      maxWait: 5000,
+      timeout: 10000,
     });
 
     return order;
