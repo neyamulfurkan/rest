@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import MenuItemCard from './MenuItemCard';
 import { MenuItemWithRelations } from '@/types';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface PopularItemsCarouselProps {
   onAddToCart: (item: MenuItemWithRelations) => void;
@@ -145,11 +146,29 @@ export default function PopularItemsCarousel({
     return null;
   }
 
+  const [titleInView, setTitleInView] = useState(false);
+
   return (
     <section className="py-8 md:py-12 overflow-hidden" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
       <div className="container mx-auto px-2 sm:px-4 max-w-7xl" itemScope itemType="https://schema.org/ItemList">
         {/* Title */}
-        <h2 className="text-5xl font-bold text-center mb-8" style={{ color: 'hsl(var(--foreground))' }} itemProp="name">
+        <h2 
+          className={cn(
+            "text-5xl font-bold text-center mb-8 transition-all duration-700",
+            titleInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          )}
+          style={{ color: 'hsl(var(--foreground))' }} 
+          itemProp="name"
+          ref={(node) => {
+            if (!node) return;
+            const observer = new IntersectionObserver(
+              ([entry]) => setTitleInView(entry.isIntersecting),
+              { threshold: 0.5, rootMargin: '-50px' }
+            );
+            observer.observe(node);
+            return () => observer.disconnect();
+          }}
+        >
           Customer Favorites
         </h2>
 

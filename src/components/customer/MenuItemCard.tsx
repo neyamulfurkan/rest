@@ -25,6 +25,7 @@ export default function MenuItemCard({
   const [rating, setRating] = useState<{ average: number; count: number } | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isInView, setIsInView] = useState(false);
 
   useEffect(() => {
     fetch(`/api/menu/${item.id}/reviews`)
@@ -62,10 +63,11 @@ export default function MenuItemCard({
     <Card
       className={cn(
         "group relative h-full flex flex-col overflow-hidden cursor-pointer",
-        "transition-all duration-300 ease-out",
+        "transition-all duration-500 ease-out",
         "hover:shadow-2xl",
         "border-0 rounded-2xl sm:rounded-3xl",
-        !item.isAvailable && "opacity-75"
+        !item.isAvailable && "opacity-75",
+        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       )}
       style={{ 
         backgroundColor: 'hsl(var(--card))',
@@ -74,6 +76,15 @@ export default function MenuItemCard({
       onClick={handleCardClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      ref={(node) => {
+        if (!node) return;
+        const observer = new IntersectionObserver(
+          ([entry]) => setIsInView(entry.isIntersecting),
+          { threshold: 0.1, rootMargin: '-50px' }
+        );
+        observer.observe(node);
+        return () => observer.disconnect();
+      }}
     >
       {/* Image Section with Gradient Overlay */}
       <div className="relative aspect-[4/3] w-full overflow-hidden shrink-0">

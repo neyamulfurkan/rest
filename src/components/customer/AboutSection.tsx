@@ -65,8 +65,8 @@ export function AboutSection({ content }: AboutSectionProps) {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          viewport={{ once: false, margin: '-100px' }}
+          transition={{ duration: 0.5 }}
           className="text-center mb-20"
         >
           <h2
@@ -94,8 +94,8 @@ export function AboutSection({ content }: AboutSectionProps) {
                 key={index}
                 initial={{ opacity: 0, x: isEven ? -80 : 80 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                viewport={{ once: false, margin: '-150px' }}
+                transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
                 className={`flex flex-col ${
                   isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'
                 } gap-12 items-center`}
@@ -138,15 +138,15 @@ export function AboutSection({ content }: AboutSectionProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
+                  viewport={{ once: false, margin: '-100px' }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
                   className="w-full lg:w-1/2 space-y-6"
                 >
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: 0.4 }}
+                    viewport={{ once: false, margin: '-100px' }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
                     className="inline-flex items-center gap-3 px-5 py-2 rounded-full"
                     style={{
                       backgroundColor: hexToRGBA(section.color, 0.15),
@@ -181,8 +181,8 @@ export function AboutSection({ content }: AboutSectionProps) {
                   <motion.div
                     initial={{ width: 0 }}
                     whileInView={{ width: '100%' }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8, delay: 0.6 }}
+                    viewport={{ once: false, margin: '-100px' }}
+                    transition={{ duration: 0.8, delay: 0.3 }}
                     className="h-1 rounded-full max-w-xs"
                     style={{ backgroundColor: section.color }}
                   />

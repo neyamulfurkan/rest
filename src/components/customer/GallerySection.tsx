@@ -73,8 +73,8 @@ export function GallerySection({ images, categories = ['All'] }: GallerySectionP
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-50px' }}
-            transition={{ duration: 0.6 }}
+            viewport={{ once: false, margin: '-100px' }}
+            transition={{ duration: 0.5 }}
             className="text-center mb-20"
           >
             <h2
@@ -101,8 +101,8 @@ export function GallerySection({ images, categories = ['All'] }: GallerySectionP
                   key={`featured-${item.url}-${index}`}
                   initial={{ opacity: 0, x: isEven ? -80 : 80 }}
                   whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: '-100px' }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                  viewport={{ once: false, margin: '-150px' }}
+                  transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
                   className={`flex flex-col ${
                     isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'
                   } gap-12 items-center`}
@@ -138,16 +138,16 @@ export function GallerySection({ images, categories = ['All'] }: GallerySectionP
                   <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
+                    viewport={{ once: false, margin: '-100px' }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
                     className="w-full lg:w-1/2 space-y-6"
                   >
                     {item.category && item.category !== 'All' && (
                       <motion.span
                         initial={{ opacity: 0, scale: 0.8 }}
                         whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.4, delay: 0.4 }}
+                        viewport={{ once: false, margin: '-100px' }}
+                        transition={{ duration: 0.4, delay: 0.1 }}
                         className="inline-block px-5 py-2 rounded-full text-sm font-bold tracking-wide uppercase"
                         style={{
                           backgroundColor: 'hsl(var(--primary) / 0.15)',
@@ -187,8 +187,8 @@ export function GallerySection({ images, categories = ['All'] }: GallerySectionP
                     <motion.div
                       initial={{ opacity: 0 }}
                       whileInView={{ opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: 0.6 }}
+                      viewport={{ once: false, margin: '-100px' }}
+                      transition={{ duration: 0.4, delay: 0.3 }}
                     >
                       <Button
                         onClick={() => {
@@ -218,8 +218,8 @@ export function GallerySection({ images, categories = ['All'] }: GallerySectionP
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              viewport={{ once: false, margin: '-100px' }}
+              transition={{ duration: 0.5 }}
               className="text-center mt-20"
             >
               <Button
