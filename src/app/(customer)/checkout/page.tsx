@@ -20,7 +20,7 @@ import { ORDER_TYPE, PAYMENT_METHOD } from '@/lib/constants';
 import type { OrderType, PaymentMethod } from '@/types';
 import { cn } from '@/lib/utils';
 
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 // Checkout form schema
 const checkoutFormSchema = z.object({
@@ -118,7 +118,11 @@ export default function CheckoutPage() {
   // Redirect if cart is empty (client-side only)
   useEffect(() => {
     if (isMounted && isEmpty) {
-      toast.error('Your cart is empty');
+      toast({
+        title: "Cart Empty",
+        description: "Your cart is empty",
+        variant: "destructive",
+      });
       router.push('/menu');
     }
   }, [isEmpty, router, isMounted]);
@@ -216,7 +220,11 @@ function CheckoutForm({
   // Validate restaurant ID on mount
   useEffect(() => {
     if (isMounted && !restaurantId) {
-      toast.error('Restaurant configuration missing. Please refresh the page.');
+      toast({
+          title: "Error",
+          description: "Restaurant configuration missing. Please refresh the page.",
+          variant: "destructive",
+        });
       router.push('/');
     }
   }, [restaurantId, router, isMounted]);
@@ -562,7 +570,10 @@ const onSubmit = async (data: CheckoutFormData) => {
         }
 
         clearCart();
-        toast.success('Order placed successfully!');
+        toast({
+          title: "Success",
+          description: "Order placed successfully!",
+        });
         router.push(`/order-tracking/${orderResult.data.id}`);
         return;
       }
@@ -610,9 +621,15 @@ const onSubmit = async (data: CheckoutFormData) => {
         // Development mode - simulate success
         if (paypalData.isDevelopmentMode) {
           console.log('🧪 DEVELOPMENT MODE: Simulating PayPal redirect');
-          toast.success('Development Mode: PayPal payment simulated');
+          toast({
+            title: "Development Mode",
+            description: "PayPal payment simulated",
+          });
           clearCart();
-          toast.success('Order placed successfully! (Development Mode)');
+          toast({
+            title: "Success",
+            description: "Order placed successfully! (Development Mode)",
+          });
           router.push(`/order-tracking/${orderResult.data.id}`);
           return;
         }
@@ -671,9 +688,15 @@ const onSubmit = async (data: CheckoutFormData) => {
         // Development mode - simulate success
         if (paymentData.isDevelopmentMode) {
           console.log('🧪 DEVELOPMENT MODE: Simulating Stripe payment');
-          toast.success('Development Mode: Payment simulated. Add Stripe keys in Admin Settings.');
+          toast({
+            title: "Development Mode",
+            description: "Payment simulated. Add Stripe keys in Admin Settings.",
+          });
           clearCart();
-          toast.success('Order placed successfully! (Development Mode)');
+          toast({
+            title: "Success",
+            description: "Order placed successfully! (Development Mode)",
+          });
           router.push(`/order-tracking/${orderResult.data.id}`);
           return;
         }
@@ -715,9 +738,9 @@ const onSubmit = async (data: CheckoutFormData) => {
         console.log('✅ Payment confirmed');
         clearCart();
         
-        toast.success('Order placed successfully!', {
+        toast({
+          title: "Order placed successfully!",
           description: `Order #${orderResult.data.orderNumber || orderResult.data.id.slice(0, 8)}`,
-          duration: 5000,
         });
         
         setTimeout(() => {
@@ -734,9 +757,10 @@ const onSubmit = async (data: CheckoutFormData) => {
       
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       
-      toast.error('Order Failed', {
+      toast({
+        title: "Order Failed",
         description: errorMessage,
-        duration: 6000,
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -772,7 +796,11 @@ return (
             (errors) => {
               console.error('❌ Form validation FAILED:');
               console.error('Validation errors:', errors);
-              toast.error('Please fill in all required fields');
+              toast({
+                title: "Error",
+                description: "Please fill in all required fields",
+                variant: "destructive",
+              });
             }
           )(e);
         }} 

@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 interface CustomerLayoutWrapperProps {
   children: React.ReactNode;
@@ -23,7 +23,6 @@ export default function CustomerLayoutWrapper({ children }: CustomerLayoutWrappe
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { branding } = useSettingsStore();
   const { data: session } = useSession();
-  const { toast } = useToast();
   const [showReviewPrompt, setShowReviewPrompt] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<any>(null);
   const [currentItem, setCurrentItem] = useState<any>(null);
