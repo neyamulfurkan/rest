@@ -11,23 +11,6 @@ interface AboutSectionProps {
 
 export function AboutSection({ content }: AboutSectionProps) {
   const { branding, aboutStoryImage, aboutMissionImage, aboutValuesImage } = useSettingsStore();
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      { threshold: 0.15, rootMargin: '-50px' }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
   
   if (!content.story && !content.mission && !content.values) {
     return null;
@@ -72,7 +55,6 @@ export function AboutSection({ content }: AboutSectionProps) {
 
   return (
     <section
-      ref={sectionRef}
       className="py-12 md:py-24 overflow-hidden"
       style={{ backgroundColor: bgColor }}
     >
@@ -80,7 +62,8 @@ export function AboutSection({ content }: AboutSectionProps) {
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, margin: '-50px' }}
           transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
           className="text-center mb-20"
         >
@@ -108,8 +91,9 @@ export function AboutSection({ content }: AboutSectionProps) {
               <motion.div
                 key={index}
                 initial={{ opacity: 0, x: isEven ? -80 : 80 }}
-                animate={isVisible ? { opacity: 1, x: 0 } : { opacity: 0, x: isEven ? -80 : 80 }}
-                transition={{ duration: 0.9, delay: isVisible ? index * 0.2 : 0, ease: [0.25, 0.1, 0.25, 1] }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: false, margin: '-50px' }}
+                transition={{ duration: 0.9, delay: index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                 className={`flex flex-col ${
                   isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'
                 } gap-12 items-center`}
@@ -151,14 +135,16 @@ export function AboutSection({ content }: AboutSectionProps) {
                 {/* Text Content */}
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
-                  animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                  transition={{ duration: 0.8, delay: isVisible ? 0.2 + index * 0.2 : 0, ease: [0.25, 0.1, 0.25, 1] }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: false, margin: '-50px' }}
+                  transition={{ duration: 0.8, delay: 0.2 + index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                   className="w-full lg:w-1/2 space-y-6"
                 >
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
-                    animate={isVisible ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.7, delay: isVisible ? 0.3 + index * 0.2 : 0, ease: [0.25, 0.1, 0.25, 1] }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: false, margin: '-50px' }}
+                    transition={{ duration: 0.7, delay: 0.3 + index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                     className="inline-flex items-center gap-3 px-5 py-2 rounded-full"
                     style={{
                       backgroundColor: hexToRGBA(section.color, 0.15),
@@ -192,8 +178,9 @@ export function AboutSection({ content }: AboutSectionProps) {
                   {/* Decorative Line */}
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={isVisible ? { width: '100%' } : { width: 0 }}
-                    transition={{ duration: 0.9, delay: isVisible ? 0.4 + index * 0.2 : 0, ease: [0.25, 0.1, 0.25, 1] }}
+                    whileInView={{ width: '100%' }}
+                    viewport={{ once: false, margin: '-50px' }}
+                    transition={{ duration: 0.9, delay: 0.4 + index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                     className="h-1 rounded-full max-w-xs"
                     style={{ backgroundColor: section.color }}
                   />
