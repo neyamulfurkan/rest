@@ -16,6 +16,7 @@ import {
   FileText,
   Settings,
   LogOut,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -81,6 +82,11 @@ export default function Sidebar({
       name: 'Customers',
       href: '/admin/customers',
       icon: Users,
+    },
+    {
+      name: 'Reviews',
+      href: '/admin/reviews',
+      icon: Star,
     },
     {
       name: 'Staff',

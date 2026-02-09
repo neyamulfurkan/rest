@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Minus, Plus, X } from 'lucide-react';
+import { Minus, Plus, X, Star } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,24 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
   const [specialInstructions, setSpecialInstructions] = useState('');
+  const [reviewsData, setReviewsData] = useState<{
+    average: number;
+    count: number;
+    reviews: any[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (isOpen && item) {
+      fetch(`/api/menu/${item.id}/reviews`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setReviewsData(data.data);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen, item]);
 
   // Reset state when modal opens with new item
   useEffect(() => {
@@ -341,6 +359,52 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
             Add to Cart
           </Button>
         </div>
+
+        {/* Reviews Section - Before closing DialogContent */}
+        {reviewsData && reviewsData.count > 0 && (
+          <div className="border-t p-6 bg-neutral-50">
+            <h3 className="font-semibold text-lg mb-3">Customer Reviews</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+              <span className="text-2xl font-bold">{reviewsData.average.toFixed(1)}</span>
+              <span className="text-sm text-muted-foreground">({reviewsData.count} {reviewsData.count === 1 ? 'review' : 'reviews'})</span>
+            </div>
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {reviewsData.reviews.slice(0, 5).map((review: any) => (
+                <div key={review.id} className="border-b pb-3 last:border-b-0">
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{review.customer.name}</span>
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`w-3 h-3 ${
+                              star <= review.rating
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(review.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {review.comment && (
+                    <p className="text-sm text-muted-foreground">{review.comment}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            {reviewsData.count > 5 && (
+              <p className="text-xs text-center text-muted-foreground mt-3">
+                Showing 5 of {reviewsData.count} reviews
+              </p>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
