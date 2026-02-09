@@ -122,6 +122,7 @@ model MenuItem {
   category            Category             @relation(fields: [categoryId], references: [id])
   restaurant          Restaurant           @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   orderItems          OrderItem[]
+  reviews             Review[]
 
   @@index([restaurantId, isAvailable])
   @@index([categoryId])
@@ -173,6 +174,7 @@ model Customer {
   bookings          Booking[]
   restaurant        Restaurant @relation(fields: [restaurantId], references: [id])
   orders            Order[]
+  reviews           Review[]
 
   @@index([email])
   @@index([restaurantId])
@@ -230,6 +232,7 @@ model Order {
   restaurant            Restaurant           @relation(fields: [restaurantId], references: [id])
   orderItems            OrderItem[]
   statusHistory         OrderStatusHistory[]
+  reviews               Review[]
 
   @@index([restaurantId, status])
   @@index([customerId])
@@ -394,6 +397,27 @@ model Notification {
 
   @@index([restaurantId, createdAt])
   @@index([isSent, createdAt])
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  rating       Int
+  comment      String?
+  customerId   String
+  menuItemId   String
+  orderId      String
+  restaurantId String
+  isApproved   Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  menuItem     MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, orderId, menuItemId])
+  @@index([menuItemId, isApproved])
+  @@index([orderId])
+  @@index([restaurantId])
 }
 
 model DemandForecast {

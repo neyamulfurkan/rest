@@ -1,8 +1,8 @@
 // src/components/customer/MenuItemCard.tsx
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Settings } from 'lucide-react';
+import { Settings, Star } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,19 @@ export default function MenuItemCard({
   onItemClick,
 }: MenuItemCardProps) {
   const hasCustomizations = item.customizationGroups && item.customizationGroups.length > 0;
+  const [rating, setRating] = useState<{ average: number; count: number } | null>(null);
+
+  useEffect(() => {
+    // Fetch rating for this item
+    fetch(`/api/menu/${item.id}/reviews`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setRating(data.data);
+        }
+      })
+      .catch(() => {});
+  }, [item.id]);
   
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -105,6 +118,15 @@ export default function MenuItemCard({
         <h3 className="text-lg sm:text-xl font-bold mb-1 line-clamp-1 min-h-[1.75rem]" style={{ color: 'hsl(var(--foreground))' }}>
           {item.name}
         </h3>
+
+        {/* Rating */}
+        {rating && rating.count > 0 && (
+          <div className="flex items-center gap-1 mb-2">
+            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+            <span className="text-sm font-medium">{rating.average.toFixed(1)}</span>
+            <span className="text-xs text-muted-foreground">({rating.count})</span>
+          </div>
+        )}
 
         {/* Description - Fixed 2 lines */}
         <div className="mb-3 min-h-[2.5rem]">

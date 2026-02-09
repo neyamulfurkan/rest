@@ -263,7 +263,7 @@ export async function PATCH(
 
 /**
  * POST /api/orders/[id]
- * Report an issue with an order
+ * Submit a review OR report an issue
  */
 export async function POST(
   request: NextRequest,
@@ -304,37 +304,110 @@ export async function POST(
       );
     }
 
-    // Send issue report email to restaurant
-    try {
-      const { sendEmail } = await import('@/services/notificationService');
-      const restaurantEmail = (order as any).restaurant?.email || process.env.SENDGRID_FROM_EMAIL || 'noreply@restaurant.com';
-      await sendEmail(
-        restaurantEmail,
-        `Order Issue Reported - ${order.orderNumber}`,
-        `
-          <h2>Order Issue Report</h2>
-          <p><strong>Order Number:</strong> ${order.orderNumber}</p>
-          <p><strong>Customer:</strong> ${order.customer.name} (${order.customer.email})</p>
-          <p><strong>Customer Phone:</strong> ${order.customer.phone || 'N/A'}</p>
-          <p><strong>Issue Description:</strong></p>
-          <p>${body.issue}</p>
-        `,
-        order.restaurantId
-      );
-    } catch (error) {
-      console.error('Failed to send issue report email:', error);
+    // Handle review submission
+    if (body.action === 'review') {
+      const { rating, comment, menuItemId } = body;
+
+      // Validate review
+      if (!rating || rating < 1 || rating > 5) {
+        return NextResponse.json(
+          { success: false, error: 'Rating must be between 1 and 5' },
+          { status: 400 }
+        );
+      }
+
+      if (!menuItemId) {
+        return NextResponse.json(
+          { success: false, error: 'Menu item ID is required' },
+          { status: 400 }
+        );
+      }
+
+      // Check if order is delivered/completed
+      if (order.status !== 'DELIVERED') {
+        return NextResponse.json(
+          { success: false, error: 'Can only review completed orders' },
+          { status: 400 }
+        );
+      }
+
+      // Check if already reviewed
+      const { prisma } = await import('@/lib/prisma');
+      const existingReview = await prisma.review.findUnique({
+        where: {
+          customerId_orderId_menuItemId: {
+            customerId: (session.user as any).id,
+            orderId: orderId,
+            menuItemId: menuItemId,
+          },
+        },
+      });
+
+      if (existingReview) {
+        return NextResponse.json(
+          { success: false, error: 'You have already reviewed this item' },
+          { status: 400 }
+        );
+      }
+
+      // Create review
+      const review = await prisma.review.create({
+        data: {
+          rating,
+          comment: comment || null,
+          customerId: (session.user as any).id,
+          menuItemId,
+          orderId,
+          restaurantId: order.restaurantId,
+          isApproved: true, // Auto-approve for basic system
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: review,
+        message: 'Review submitted successfully',
+      });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Issue reported successfully',
-    });
+    // Handle issue report (existing functionality)
+    if (body.issue) {
+      try {
+        const { sendEmail } = await import('@/services/notificationService');
+        const restaurantEmail = (order as any).restaurant?.email || process.env.SENDGRID_FROM_EMAIL || 'noreply@restaurant.com';
+        await sendEmail(
+          restaurantEmail,
+          `Order Issue Reported - ${order.orderNumber}`,
+          `
+            <h2>Order Issue Report</h2>
+            <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+            <p><strong>Customer:</strong> ${order.customer.name} (${order.customer.email})</p>
+            <p><strong>Customer Phone:</strong> ${order.customer.phone || 'N/A'}</p>
+            <p><strong>Issue Description:</strong></p>
+            <p>${body.issue}</p>
+          `,
+          order.restaurantId
+        );
+      } catch (error) {
+        console.error('Failed to send issue report email:', error);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Issue reported successfully',
+      });
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'Invalid request' },
+      { status: 400 }
+    );
   } catch (error) {
-    console.error('Error reporting issue:', error);
+    console.error('Error in POST /api/orders/[id]:', error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to report issue',
+        error: 'Failed to process request',
       },
       { status: 500 }
     );

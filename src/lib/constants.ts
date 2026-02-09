@@ -48,6 +48,12 @@ export const STAFF_ROLE = {
   WAITER: 'WAITER',
 } as const;
 
+export const REVIEW_STATUS = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+
 // Type exports for TypeScript
 export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
 export type OrderType = typeof ORDER_TYPE[keyof typeof ORDER_TYPE];
@@ -55,3 +61,4 @@ export type PaymentMethod = typeof PAYMENT_METHOD[keyof typeof PAYMENT_METHOD];
 export type PaymentStatus = typeof PAYMENT_STATUS[keyof typeof PAYMENT_STATUS];
 export type BookingStatus = typeof BOOKING_STATUS[keyof typeof BOOKING_STATUS];
 export type StaffRole = typeof STAFF_ROLE[keyof typeof STAFF_ROLE];
+export type ReviewStatus = typeof REVIEW_STATUS[keyof typeof REVIEW_STATUS];

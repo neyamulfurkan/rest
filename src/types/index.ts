@@ -764,3 +764,33 @@ export interface ChatSession {
   createdAt: Date;
   lastActivityAt: Date;
 }
+
+// ============= REVIEW TYPES =============
+
+export interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  customerId: string;
+  menuItemId: string;
+  orderId: string;
+  restaurantId: string;
+  isApproved: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ReviewWithCustomer extends Review {
+  customer: {
+    id: string;
+    name: string;
+    profileImage: string | null;
+  };
+}
+
+export interface CreateReviewRequest {
+  rating: number;
+  comment?: string;
+  menuItemId: string;
+  orderId: string;
+}
