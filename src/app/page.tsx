@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 import { HomePageClient } from './HomePageClient';
 
+// CRITICAL: Force dynamic rendering - don't pre-render at build time
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Generate metadata for SEO
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -149,6 +153,7 @@ export default async function HomePage() {
     contentMission: content.mission?.substring(0, 50),
     contentValues: content.values?.substring(0, 50),
   });
+  
   // Generate JSON-LD structured data for Google
   const structuredData = {
     '@context': 'https://schema.org',
