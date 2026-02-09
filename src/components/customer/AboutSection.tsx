@@ -17,11 +17,9 @@ export function AboutSection({ content }: AboutSectionProps) {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
+        setIsVisible(entry.isIntersecting);
       },
-      { threshold: 0.1, rootMargin: '0px' }
+      { threshold: 0.15, rootMargin: '-50px' }
     );
 
     if (sectionRef.current) {
@@ -83,7 +81,7 @@ export function AboutSection({ content }: AboutSectionProps) {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
           className="text-center mb-20"
         >
           <h2
@@ -111,7 +109,7 @@ export function AboutSection({ content }: AboutSectionProps) {
                 key={index}
                 initial={{ opacity: 0, x: isEven ? -80 : 80 }}
                 animate={isVisible ? { opacity: 1, x: 0 } : { opacity: 0, x: isEven ? -80 : 80 }}
-                transition={{ duration: 0.6, delay: isVisible ? index * 0.15 : 0, ease: [0.25, 0.1, 0.25, 1] }}
+                transition={{ duration: 0.9, delay: isVisible ? index * 0.2 : 0, ease: [0.25, 0.1, 0.25, 1] }}
                 className={`flex flex-col ${
                   isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'
                 } gap-12 items-center`}
@@ -154,13 +152,13 @@ export function AboutSection({ content }: AboutSectionProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                  transition={{ duration: 0.5, delay: isVisible ? 0.15 + index * 0.15 : 0, ease: [0.25, 0.1, 0.25, 1] }}
+                  transition={{ duration: 0.8, delay: isVisible ? 0.2 + index * 0.2 : 0, ease: [0.25, 0.1, 0.25, 1] }}
                   className="w-full lg:w-1/2 space-y-6"
                 >
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={isVisible ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.4, delay: isVisible ? 0.25 + index * 0.15 : 0, ease: [0.25, 0.1, 0.25, 1] }}
+                    transition={{ duration: 0.7, delay: isVisible ? 0.3 + index * 0.2 : 0, ease: [0.25, 0.1, 0.25, 1] }}
                     className="inline-flex items-center gap-3 px-5 py-2 rounded-full"
                     style={{
                       backgroundColor: hexToRGBA(section.color, 0.15),
@@ -195,7 +193,7 @@ export function AboutSection({ content }: AboutSectionProps) {
                   <motion.div
                     initial={{ width: 0 }}
                     animate={isVisible ? { width: '100%' } : { width: 0 }}
-                    transition={{ duration: 0.6, delay: isVisible ? 0.35 + index * 0.15 : 0, ease: [0.25, 0.1, 0.25, 1] }}
+                    transition={{ duration: 0.9, delay: isVisible ? 0.4 + index * 0.2 : 0, ease: [0.25, 0.1, 0.25, 1] }}
                     className="h-1 rounded-full max-w-xs"
                     style={{ backgroundColor: section.color }}
                   />
