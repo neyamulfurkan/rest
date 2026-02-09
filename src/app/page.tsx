@@ -5,7 +5,9 @@ import { HomePageClient } from './HomePageClient';
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const response = await fetch(`${baseUrl}/api/settings`, { 
+      cache: 'no-store' // Metadata can be cached by Next.js itself
+    });
     const { data: settings } = await response.json();
     
     const restaurantName = settings?.name || 'RestaurantOS';
@@ -87,12 +89,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  // Fetch settings server-side for SEO
+  // Fetch settings server-side for SEO - NO CACHE for dynamic content
   let settings: any = {};
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/settings`, { 
-      cache: 'force-cache'
+      cache: 'no-store' // CRITICAL: Don't cache - we need fresh gallery/about data
     });
     
     if (!response.ok) {
@@ -101,6 +103,17 @@ export default async function HomePage() {
     
     const { data } = await response.json();
     settings = data || {};
+    
+    // DEBUG: Log what we got from API
+    console.log('📄 Server Page.tsx - API returned:', {
+      name: settings?.name,
+      hasGalleryImages: !!settings?.galleryImages,
+      galleryImagesCount: Array.isArray(settings?.galleryImages) ? settings.galleryImages.length : 0,
+      showGalleryOnHome: settings?.showGalleryOnHome,
+      hasAboutStory: !!settings?.aboutStory,
+      hasAboutMission: !!settings?.aboutMission,
+      hasAboutValues: !!settings?.aboutValues,
+    });
   } catch (error) {
     console.error('Failed to fetch settings:', error);
     // Use defaults on error
@@ -109,6 +122,11 @@ export default async function HomePage() {
       description: 'Experience culinary excellence',
       city: '',
       state: '',
+      galleryImages: [],
+      showGalleryOnHome: false,
+      aboutStory: null,
+      aboutMission: null,
+      aboutValues: null,
     };
   }
 
@@ -121,11 +139,15 @@ export default async function HomePage() {
     values: settings?.aboutValues || null,
   };
   
-  console.log('📄 Page.tsx - Settings:', {
+  // DEBUG: Log final data being passed to client
+  console.log('📄 Server Page.tsx - Passing to client:', {
     restaurantName,
-    hasGallery: settings?.galleryImages?.length || 0,
+    settingsKeys: Object.keys(settings),
+    galleryImagesLength: settings?.galleryImages?.length || 0,
     showGalleryOnHome: settings?.showGalleryOnHome,
-    hasAbout: !!(content.story || content.mission || content.values)
+    contentStory: content.story?.substring(0, 50),
+    contentMission: content.mission?.substring(0, 50),
+    contentValues: content.values?.substring(0, 50),
   });
   // Generate JSON-LD structured data for Google
   const structuredData = {
