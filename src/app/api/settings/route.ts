@@ -381,7 +381,12 @@ export async function POST(request: NextRequest) {
       'stripeSecretKey',
       'stripeWebhookSecret',
       'paypalClientId',
-      'paypalClientSecret'
+      'paypalClientSecret',
+      'twilioAccountSid',
+      'twilioAuthToken',
+      'twilioPhoneNumber',
+      'sendgridApiKey',
+      'sendgridFromEmail'
     ];
     
     for (const key of customSettingsKeys) {
