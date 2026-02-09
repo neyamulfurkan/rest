@@ -291,24 +291,52 @@ export function HomePageClient({ restaurantName, settings, content }: { restaura
         initialItems={popularItems}
       />
 
-      {/* Gallery Section */}
-      {isClient && settings && settings.showGalleryOnHome && settings.galleryImages && settings.galleryImages.length > 0 && (
-        <GallerySection 
-          images={settings.galleryImages} 
-          categories={settings.galleryCategories || ['All']}
-        />
-      )}
+      {/* Gallery Section - DEBUG VERSION */}
+      {isClient && (() => {
+        console.log('🖼️ Gallery Check:', {
+          hasSettings: !!settings,
+          showGalleryOnHome: settings?.showGalleryOnHome,
+          hasGalleryImages: !!settings?.galleryImages,
+          isArray: Array.isArray(settings?.galleryImages),
+          length: settings?.galleryImages?.length,
+          firstImage: settings?.galleryImages?.[0],
+        });
 
-      {/* About Section */}
-      {isClient && (content?.story || content?.mission || content?.values) && (
-        <AboutSection
-          content={{
-            story: content?.story || '',
-            mission: content?.mission || '',
-            values: content?.values || '',
-          }}
-        />
-      )}
+        // SIMPLIFIED: Just check if array exists and has items
+        if (settings?.galleryImages && Array.isArray(settings.galleryImages) && settings.galleryImages.length > 0) {
+          return (
+            <GallerySection 
+              images={settings.galleryImages} 
+              categories={settings.galleryCategories || ['All']}
+            />
+          );
+        }
+        return null;
+      })()}
+
+      {/* About Section - DEBUG VERSION */}
+      {isClient && (() => {
+        console.log('📖 About Check:', {
+          hasContent: !!content,
+          hasStory: !!content?.story,
+          hasMission: !!content?.mission,
+          hasValues: !!content?.values,
+          storyPreview: content?.story?.substring(0, 50),
+        });
+
+        if (content?.story || content?.mission || content?.values) {
+          return (
+            <AboutSection
+              content={{
+                story: content?.story || '',
+                mission: content?.mission || '',
+                values: content?.values || '',
+              }}
+            />
+          );
+        }
+        return null;
+      })()}
 
       {/* Footer */}
       <Footer />
