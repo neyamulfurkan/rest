@@ -179,9 +179,9 @@ export default async function MenuPage() {
   );
 }
 
-// Client Component for interactivity
 'use client';
 
+// Client Component for interactivity
 function MenuPageClient({ 
   restaurantName, 
   settings, 

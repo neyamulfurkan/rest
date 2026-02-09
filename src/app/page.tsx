@@ -178,9 +178,9 @@ export default async function HomePage() {
   );
 }
 
-// Client Component for interactivity
 'use client';
 
+// Client Component for interactivity
 function HomePageClient({ restaurantName, settings, content }: { restaurantName: string; settings: any; content: any }) {
   const router = useRouter();
   const { addItem } = useCart();
@@ -467,9 +467,9 @@ function HomePageClient({ restaurantName, settings, content }: { restaurantName:
   );
 }
 
-// Hero Media Component
 'use client';
 
+// Hero Media Component
 function HeroMedia({ settings }: { settings: any }) {
   const branding = settings?.branding || {};
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -810,9 +810,9 @@ function HeroMedia({ settings }: { settings: any }) {
   );
 }
 
-// QR Code Display Component (moved outside HomePage)
 'use client';
 
+// QR Code Display Component (moved outside HomePage)
 function QRCodeSection() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
