@@ -1,7 +1,7 @@
 // src/hooks/useCart.ts
 
 import { useCartStore } from '@/store/cartStore';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import type { CartItem } from '@/types';
 
 /**
@@ -28,9 +28,9 @@ export function useCart() {
   ) => {
     store.addItem(item, quantity, customizations, specialInstructions);
     
-    toast.success(`${item.name} added to cart`, {
-      description: `Quantity: ${quantity}`,
-      duration: 2000,
+    toast({
+      title: "Added to cart",
+      description: `${item.name} (Qty: ${quantity})`,
     });
 
     // Optional: Track analytics
@@ -62,8 +62,9 @@ export function useCart() {
     store.removeItem(menuItemId);
     
     if (itemToRemove) {
-      toast.success(`${itemToRemove.name} removed from cart`, {
-        duration: 2000,
+      toast({
+        title: "Removed from cart",
+        description: itemToRemove.name,
       });
 
       // Optional: Track analytics
@@ -90,7 +91,11 @@ export function useCart() {
   // Wrapped updateQuantity with validation
   const updateQuantity = (menuItemId: string, quantity: number) => {
     if (quantity < 0) {
-      toast.error('Quantity cannot be negative');
+      toast({
+        title: "Invalid quantity",
+        description: "Quantity cannot be negative",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -108,15 +113,18 @@ export function useCart() {
     const itemCount = store.getItemCount();
     
     if (itemCount === 0) {
-      toast.info('Cart is already empty');
+      toast({
+        title: "Cart is empty",
+        description: "No items to remove",
+      });
       return;
     }
 
     store.clearCart();
     
-    toast.success('Cart cleared', {
+    toast({
+      title: "Cart cleared",
       description: `${itemCount} item${itemCount > 1 ? 's' : ''} removed`,
-      duration: 2000,
     });
   };
 
