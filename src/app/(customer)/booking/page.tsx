@@ -5,7 +5,7 @@ import { BookingPageClient } from './BookingPageClient';
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'no-store' });
     const { data: settings } = await response.json();
     
     const restaurantName = settings?.name || 'RestaurantOS';
@@ -63,7 +63,7 @@ export default async function BookingPage() {
   let settings: any = {};
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'force-cache', next: { revalidate: 3600 } });
+    const response = await fetch(`${baseUrl}/api/settings`, { cache: 'no-store' });
     const { data } = await response.json();
     settings = data || {};
   } catch (error) {
