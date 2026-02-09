@@ -408,6 +408,14 @@ export async function getOrderById(orderId: string): Promise<OrderWithRelations 
       where: { id: orderId },
       include: {
         customer: true,
+        restaurant: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+          },
+        },
         orderItems: {
           include: {
             menuItem: true,

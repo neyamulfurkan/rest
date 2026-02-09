@@ -142,8 +142,8 @@ export default function OrderTrackingPage() {
 
   // Handle call restaurant
   const handleCallRestaurant = () => {
-    // Get restaurant phone from order or settings
-    const phone = '+1234567890'; // Replace with actual restaurant phone
+    // Get restaurant phone from order
+    const phone = (order as any)?.restaurant?.phone || '+1234567890';
     window.location.href = `tel:${phone}`;
   };
 
@@ -162,13 +162,12 @@ export default function OrderTrackingPage() {
       setIsSubmittingReport(true);
       
       // Submit report to API
-      const response = await fetch('/api/orders/report-issue', {
+      const response = await fetch(`/api/orders/${order?.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          orderId: order?.id,
           issue: reportIssue,
         }),
       });

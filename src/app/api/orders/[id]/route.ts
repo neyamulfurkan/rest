@@ -260,3 +260,83 @@ export async function PATCH(
     );
   }
 }
+
+/**
+ * POST /api/orders/[id]
+ * Report an issue with an order
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession();
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const orderId = params.id;
+    const body = await request.json();
+
+    // Get order to verify ownership
+    const order = await getOrderById(orderId);
+
+    if (!order) {
+      return NextResponse.json(
+        { success: false, error: 'Order not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check authorization
+    const userRole = (session.user as any)?.role;
+    const isStaffRole = userRole && ['ADMIN', 'KITCHEN', 'WAITER'].includes(userRole);
+    const isOrderOwner = order.customerId === (session.user as any)?.id;
+
+    if (!isStaffRole && !isOrderOwner) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
+    // Send issue report email to restaurant
+    try {
+      const { sendEmail } = await import('@/services/notificationService');
+      const restaurantEmail = (order as any).restaurant?.email || process.env.SENDGRID_FROM_EMAIL || 'noreply@restaurant.com';
+      await sendEmail(
+        restaurantEmail,
+        `Order Issue Reported - ${order.orderNumber}`,
+        `
+          <h2>Order Issue Report</h2>
+          <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+          <p><strong>Customer:</strong> ${order.customer.name} (${order.customer.email})</p>
+          <p><strong>Customer Phone:</strong> ${order.customer.phone || 'N/A'}</p>
+          <p><strong>Issue Description:</strong></p>
+          <p>${body.issue}</p>
+        `,
+        order.restaurantId
+      );
+    } catch (error) {
+      console.error('Failed to send issue report email:', error);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Issue reported successfully',
+    });
+  } catch (error) {
+    console.error('Error reporting issue:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to report issue',
+      },
+      { status: 500 }
+    );
+  }
+}
