@@ -211,6 +211,8 @@ export function HomePageClient({ restaurantName: initialRestaurantName, settings
 
       {/* Features Section with semantic HTML */}
       <section className="py-12 md:py-24" style={{ backgroundColor: 'hsl(var(--page-bg))' }} aria-label="Features">
+        {isClient && (
+        <>
         <h2 className="sr-only">Why Choose {restaurantName}</h2>
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -314,6 +316,8 @@ export function HomePageClient({ restaurantName: initialRestaurantName, settings
             </motion.div>
           </div>
         </div>
+        </>
+        )}
       </section>
 
       {/* Popular Items Carousel */}

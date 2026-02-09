@@ -1,18 +1,22 @@
 'use client';
-
-import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Heart, Target, Award } from 'lucide-react';
 import { AboutContent } from '@/types';
 import { useSettingsStore } from '@/store/settingsStore';
-
+import React, { useState, useEffect } from 'react';
 interface AboutSectionProps {
   content: AboutContent;
 }
 
 export function AboutSection({ content }: AboutSectionProps) {
   const { branding, aboutStoryImage, aboutMissionImage, aboutValuesImage } = useSettingsStore();
+  const [hasAnimated, setHasAnimated] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setHasAnimated(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
   
   if (!content.story && !content.mission && !content.values) {
     return null;
@@ -63,9 +67,8 @@ export function AboutSection({ content }: AboutSectionProps) {
       <div className="container mx-auto px-2 sm:px-4 max-w-7xl" itemScope itemType="https://schema.org/ItemList">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2, margin: '0px 0px -200px 0px' }}
+          initial={hasAnimated ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
           className="text-center mb-20"
         >
@@ -92,10 +95,9 @@ export function AboutSection({ content }: AboutSectionProps) {
             return (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, x: isEven ? -80 : 80 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, amount: 0.15, margin: '0px 0px -250px 0px' }}
-                transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+                initial={hasAnimated ? { opacity: 1, x: 0 } : { opacity: 0, x: isEven ? -80 : 80 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, delay: hasAnimated ? 0 : index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                 className={`flex flex-col ${
                   isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'
                 } gap-12 items-center`}
@@ -136,17 +138,15 @@ export function AboutSection({ content }: AboutSectionProps) {
 
                 {/* Text Content */}
                 <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2, margin: '0px 0px -200px 0px' }}
-                  transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                  initial={hasAnimated ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: hasAnimated ? 0 : 0.2 + index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                   className="w-full lg:w-1/2 space-y-6"
                 >
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.5, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+                    initial={hasAnimated ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: hasAnimated ? 0 : 0.3 + index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                     className="inline-flex items-center gap-3 px-5 py-2 rounded-full"
                     style={{
                       backgroundColor: hexToRGBA(section.color, 0.15),
@@ -179,10 +179,9 @@ export function AboutSection({ content }: AboutSectionProps) {
 
                   {/* Decorative Line */}
                   <motion.div
-                    initial={{ width: 0 }}
-                    whileInView={{ width: '100%' }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.8, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+                    initial={hasAnimated ? { width: '100%' } : { width: 0 }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 0.8, delay: hasAnimated ? 0 : 0.4 + index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                     className="h-1 rounded-full max-w-xs"
                     style={{ backgroundColor: section.color }}
                   />
