@@ -158,22 +158,22 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0 sm:max-w-2xl w-[calc(100vw-2rem)] sm:w-full z-[10000]">
+      <DialogContent className="max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col p-0 sm:max-w-2xl w-[calc(100vw-1rem)] sm:w-full z-[10000] gap-0">
         {/* Header with manual close button for mobile */}
-        <div className="absolute top-3 right-3 z-50">
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-50">
           <Button
             onClick={onClose}
             variant="ghost"
             size="icon"
-            className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white"
+            className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white"
             aria-label="Close"
           >
             <X className="h-5 w-5 text-neutral-700" />
           </Button>
         </div>
         
-        {/* Large image - 50% of modal height */}
-        <div className="relative h-[45vh] min-h-[300px] bg-neutral-100">
+        {/* Large image - responsive height */}
+        <div className="relative h-[35vh] sm:h-[40vh] min-h-[250px] sm:min-h-[300px] bg-neutral-100 shrink-0">
           {item.imageUrl ? (
             <Image
               src={item.imageUrl}
@@ -181,16 +181,17 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
               fill
               className="object-cover"
               priority
+              sizes="(max-width: 640px) 100vw, 672px"
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-neutral-400">
+            <div className="flex items-center justify-center h-full text-neutral-400 text-sm sm:text-base">
               No image available
             </div>
           )}
         </div>
 
         {/* Scrollable content area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Item details */}
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">{item.name}</DialogTitle>
@@ -202,7 +203,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
           </DialogHeader>
 
           {/* Price */}
-          <div className="text-xl font-bold" style={{ color: 'hsl(var(--primary))' }}>
+          <div className="text-lg sm:text-xl font-bold" style={{ color: 'hsl(var(--primary))' }}>
             {formatCurrency(item.price)}
           </div>
 
@@ -316,44 +317,46 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
 
           {/* Quantity selector */}
           <div className="space-y-2">
-            <label className="font-semibold text-neutral-900">Quantity</label>
-            <div className="flex items-center gap-3">
+            <label className="font-semibold text-sm sm:text-base" style={{ color: 'hsl(var(--foreground))' }}>Quantity</label>
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => handleQuantityChange(-1)}
                 disabled={quantity <= 1}
-                className="h-10 w-10"
+                className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
+                style={{ borderColor: 'hsl(var(--border))' }}
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
-              <span className="text-xl font-semibold w-12 text-center">{quantity}</span>
+              <span className="text-lg sm:text-xl font-semibold min-w-[3rem] text-center" style={{ color: 'hsl(var(--foreground))' }}>{quantity}</span>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => handleQuantityChange(1)}
-                className="h-10 w-10"
+                className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
+                style={{ borderColor: 'hsl(var(--border))' }}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
         </div>
 
         {/* Sticky bottom: Total and Add to Cart button */}
-        <div className="border-t border-neutral-200 p-6 bg-white">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-lg font-semibold text-neutral-900">Total</span>
-            <span className="text-2xl font-bold" style={{ color: 'hsl(var(--primary))' }}>
+        <div className="border-t p-4 sm:p-6 bg-white shrink-0" style={{ borderColor: 'hsl(var(--border))', backgroundColor: 'hsl(var(--card))' }}>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <span className="text-base sm:text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Total</span>
+            <span className="text-xl sm:text-2xl font-bold" style={{ color: 'hsl(var(--primary))' }}>
               {formatCurrency(calculateTotal())}
             </span>
           </div>
           <Button
             onClick={handleAddToCart}
-            className="w-full h-12 text-base font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+            className="w-full h-11 sm:h-12 text-sm sm:text-base font-semibold shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
             style={{
-              background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)',
-              color: '#ffffff',
+              backgroundColor: 'hsl(var(--primary))',
+              color: 'hsl(var(--primary-foreground))',
             }}
           >
             Add to Cart
@@ -362,7 +365,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
 
         {/* Reviews Section - Before closing DialogContent */}
         {reviewsData && reviewsData.count > 0 && (
-          <div className="border-t p-6 bg-neutral-50">
+          <div className="border-t p-4 sm:p-6 shrink-0" style={{ borderColor: 'hsl(var(--border))', backgroundColor: 'hsl(var(--muted) / 0.3)' }}>
             <h3 className="font-semibold text-lg mb-3">Customer Reviews</h3>
             <div className="flex items-center gap-2 mb-4">
               <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />

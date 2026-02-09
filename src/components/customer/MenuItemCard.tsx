@@ -56,18 +56,21 @@ export default function MenuItemCard({
         cursor-pointer
         transition-all
         duration-300
-        hover:-translate-y-2
+        hover:-translate-y-1
+        sm:hover:-translate-y-2
         hover:shadow-xl
         border
-        border-neutral-100
       "
-      style={{ backgroundColor: 'hsl(var(--card))' }}
+      style={{ 
+        backgroundColor: 'hsl(var(--card))',
+        borderColor: 'hsl(var(--border))'
+      }}
       onClick={handleCardClick}
     >
       {/* Image Container - Fixed aspect ratio */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100 shrink-0">
+      <div className="relative aspect-[4/3] w-full overflow-hidden shrink-0" style={{ backgroundColor: 'hsl(var(--muted) / 0.3)' }}>
         <Image
-          src={item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="18"%3ENo image%3C/text%3E%3C/svg%3E'}
+          src={item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="16"%3ENo image%3C/text%3E%3C/svg%3E'}
           alt={`${item.name} - ${item.category?.name || 'Menu item'} at restaurant`}
           fill
           className="object-cover"
@@ -113,42 +116,42 @@ export default function MenuItemCard({
       </div>
 
       {/* Content - Flex grow to fill remaining space */}
-      <div className="flex flex-col flex-1 p-4">
+      <div className="flex flex-col flex-1 p-3 sm:p-4">
         {/* Item Name - Fixed height */}
-        <h3 className="text-lg sm:text-xl font-bold mb-1 line-clamp-1 min-h-[1.75rem]" style={{ color: 'hsl(var(--foreground))' }}>
+        <h3 className="text-base sm:text-lg font-bold mb-1 line-clamp-1 min-h-[1.5rem] sm:min-h-[1.75rem]" style={{ color: 'hsl(var(--foreground))' }}>
           {item.name}
         </h3>
 
         {/* Rating */}
         {rating && rating.count > 0 && (
-          <div className="flex items-center gap-1 mb-2">
-            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm font-medium">{rating.average.toFixed(1)}</span>
-            <span className="text-xs text-muted-foreground">({rating.count})</span>
+          <div className="flex items-center gap-1 mb-1.5 sm:mb-2">
+            <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
+            <span className="text-xs sm:text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>{rating.average.toFixed(1)}</span>
+            <span className="text-[10px] sm:text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>({rating.count})</span>
           </div>
         )}
 
         {/* Description - Fixed 2 lines */}
-        <div className="mb-3 min-h-[2.5rem]">
+        <div className="mb-2 sm:mb-3 min-h-[2.25rem] sm:min-h-[2.5rem]">
           {item.description && (
-            <p className="text-sm line-clamp-2" style={{ color: 'hsl(var(--foreground) / 0.7)' }}>
+            <p className="text-xs sm:text-sm line-clamp-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
               {item.description}
             </p>
           )}
         </div>
 
         {/* Additional Dietary Info Badges - Fixed height area */}
-        <div className="mb-3 min-h-[1.5rem]">
+        <div className="mb-2 sm:mb-3 min-h-[1.25rem] sm:min-h-[1.5rem]">
           {item.isGlutenFree && (
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-[10px] sm:text-xs">
               Gluten-Free
             </Badge>
           )}
         </div>
 
         {/* Price and Button - Push to bottom */}
-        <div className="flex items-center justify-between gap-2 mt-auto">
-          <span className="text-lg sm:text-xl font-bold shrink-0" style={{ color: 'hsl(var(--primary))' }}>
+        <div className="flex items-center justify-between gap-2 mt-auto pt-2">
+          <span className="text-base sm:text-lg font-bold shrink-0" style={{ color: 'hsl(var(--primary))' }}>
             {formatCurrency(item.price)}
           </span>
 
@@ -160,12 +163,21 @@ export default function MenuItemCard({
               transition-transform
               duration-200
               active:scale-95
-              text-sm
+              text-xs
+              sm:text-sm
               shrink-0
+              h-8
+              sm:h-9
+              px-3
+              sm:px-4
+              whitespace-nowrap
             "
-            size="sm"
+            style={{
+              backgroundColor: !item.isAvailable ? 'hsl(var(--muted))' : 'hsl(var(--primary))',
+              color: !item.isAvailable ? 'hsl(var(--muted-foreground))' : 'hsl(var(--primary-foreground))',
+            }}
           >
-            Add to Cart
+            Add
           </Button>
         </div>
       </div>
