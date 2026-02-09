@@ -11,13 +11,24 @@ interface AboutSectionProps {
 
 export function AboutSection({ content }: AboutSectionProps) {
   const { branding, aboutStoryImage, aboutMissionImage, aboutValuesImage } = useSettingsStore();
-  const [hasAnimated, setHasAnimated] = useState(false);
-  const [isInitialRender, setIsInitialRender] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setIsInitialRender(false);
-    const timer = setTimeout(() => setHasAnimated(true), 100);
-    return () => clearTimeout(timer);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px' }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
   }, []);
   
   if (!content.story && !content.mission && !content.values) {
@@ -63,15 +74,16 @@ export function AboutSection({ content }: AboutSectionProps) {
 
   return (
     <section
+      ref={sectionRef}
       className="py-12 md:py-24 overflow-hidden"
       style={{ backgroundColor: bgColor }}
     >
       <div className="container mx-auto px-2 sm:px-4 max-w-7xl" itemScope itemType="https://schema.org/ItemList">
         {/* Section Header */}
         <motion.div
-          initial={isInitialRender ? { opacity: 0, y: 30 } : { opacity: 1, y: 0 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
           className="text-center mb-20"
         >
           <h2
@@ -97,9 +109,9 @@ export function AboutSection({ content }: AboutSectionProps) {
             return (
               <motion.div
                 key={index}
-                initial={isInitialRender ? { opacity: 0, x: isEven ? -80 : 80 } : { opacity: 1, x: 0 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7, delay: isInitialRender ? index * 0.2 : 0, ease: [0.25, 0.1, 0.25, 1] }}
+                initial={{ opacity: 0, x: isEven ? -80 : 80 }}
+                animate={isVisible ? { opacity: 1, x: 0 } : { opacity: 0, x: isEven ? -80 : 80 }}
+                transition={{ duration: 0.6, delay: isVisible ? index * 0.15 : 0, ease: [0.25, 0.1, 0.25, 1] }}
                 className={`flex flex-col ${
                   isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'
                 } gap-12 items-center`}
@@ -140,15 +152,15 @@ export function AboutSection({ content }: AboutSectionProps) {
 
                 {/* Text Content */}
                 <motion.div
-                  initial={isInitialRender ? { opacity: 0, y: 30 } : { opacity: 1, y: 0 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: hasAnimated ? 0 : 0.2 + index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                  transition={{ duration: 0.5, delay: isVisible ? 0.15 + index * 0.15 : 0, ease: [0.25, 0.1, 0.25, 1] }}
                   className="w-full lg:w-1/2 space-y-6"
                 >
                   <motion.div
-                    initial={isInitialRender ? { opacity: 0, scale: 0.8 } : { opacity: 1, scale: 1 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: hasAnimated ? 0 : 0.3 + index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={isVisible ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.4, delay: isVisible ? 0.25 + index * 0.15 : 0, ease: [0.25, 0.1, 0.25, 1] }}
                     className="inline-flex items-center gap-3 px-5 py-2 rounded-full"
                     style={{
                       backgroundColor: hexToRGBA(section.color, 0.15),
@@ -181,9 +193,9 @@ export function AboutSection({ content }: AboutSectionProps) {
 
                   {/* Decorative Line */}
                   <motion.div
-                    initial={isInitialRender ? { width: 0 } : { width: '100%' }}
-                    animate={{ width: '100%' }}
-                    transition={{ duration: 0.8, delay: hasAnimated ? 0 : 0.4 + index * 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                    initial={{ width: 0 }}
+                    animate={isVisible ? { width: '100%' } : { width: 0 }}
+                    transition={{ duration: 0.6, delay: isVisible ? 0.35 + index * 0.15 : 0, ease: [0.25, 0.1, 0.25, 1] }}
                     className="h-1 rounded-full max-w-xs"
                     style={{ backgroundColor: section.color }}
                   />
