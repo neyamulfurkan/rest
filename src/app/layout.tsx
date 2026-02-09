@@ -156,10 +156,17 @@ export default async function RootLayout({
       postalCode: restaurantData.zipCode || '',
       addressCountry: restaurantData.country || 'US',
     } : undefined,
+    geo: restaurantData?.latitude && restaurantData?.longitude ? {
+      '@type': 'GeoCoordinates',
+      latitude: restaurantData.latitude,
+      longitude: restaurantData.longitude,
+    } : undefined,
     priceRange: '$$',
     servesCuisine: 'Multiple cuisines',
     acceptsReservations: true,
     hasMenu: `${process.env.NEXT_PUBLIC_APP_URL}/menu`,
+    paymentAccepted: 'Cash, Credit Card, Debit Card',
+    currenciesAccepted: 'USD',
   };
 
   return (

@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
     return {
       title: `Book a Table - ${restaurantName}${city ? ` | ${city}, ${state}` : ''}`,
-      description: `Reserve your table at ${restaurantName}. Easy online booking${city ? ` in ${city}, ${state}` : ''}. Choose your date, time, and party size.`,
+       description: `Reserve your table at ${restaurantName}. Easy online booking for lunch, dinner, and special occasions${city ? ` in ${city}, ${state}` : ''}. Choose your preferred date, time, and party size. Instant confirmation!`,
       keywords: [
         restaurantName,
         'table reservation',

@@ -28,6 +28,9 @@ export async function generateMetadata(): Promise<Metadata> {
         'delivery menu',
         'takeout menu',
         'dine-in menu',
+        `${city} restaurants`,
+        `food delivery ${city}`,
+        'online food ordering',
       ].filter(Boolean),
       alternates: {
         canonical: '/menu',

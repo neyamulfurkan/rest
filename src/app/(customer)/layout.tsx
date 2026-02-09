@@ -15,11 +15,12 @@ export async function generateMetadata(): Promise<Metadata> {
     const restaurantName = settings?.name || 'RestaurantOS';
     const description = settings?.description || 'Experience culinary excellence. Order online or book a table.';
     const city = settings?.city || '';
+    const state = settings?.state || '';
     const logoUrl = settings?.logoUrl;
     
     return {
-      title: `${restaurantName}${city ? ` - ${city}` : ''}`,
-      description: description,
+      title: `${restaurantName}${city && state ? ` - ${city}, ${state}` : ''}`,
+      description: description.length < 120 ? `${description} Order delivery, pickup, or dine-in today!` : description,
       alternates: {
         canonical: '/',
       },
