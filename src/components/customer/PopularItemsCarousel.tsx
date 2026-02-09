@@ -148,13 +148,18 @@ export default function PopularItemsCarousel({
 
   const [titleInView, setTitleInView] = useState(false);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setTitleInView(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <section className="py-8 md:py-12 overflow-hidden" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
       <div className="container mx-auto px-2 sm:px-4 max-w-7xl" itemScope itemType="https://schema.org/ItemList">
         {/* Title */}
         <h2 
           className={cn(
-            "text-5xl font-bold text-center mb-8 transition-all duration-700",
+            "text-5xl font-bold text-center mb-8 transition-all duration-700 ease-out",
             titleInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           )}
           style={{ color: 'hsl(var(--foreground))' }} 
@@ -162,8 +167,14 @@ export default function PopularItemsCarousel({
           ref={(node) => {
             if (!node) return;
             const observer = new IntersectionObserver(
-              ([entry]) => setTitleInView(entry.isIntersecting),
-              { threshold: 0.5, rootMargin: '-50px' }
+              ([entry]) => {
+                if (entry.isIntersecting) {
+                  setTitleInView(true);
+                } else {
+                  setTitleInView(false);
+                }
+              },
+              { threshold: 0.3, rootMargin: '0px 0px -100px 0px' }
             );
             observer.observe(node);
             return () => observer.disconnect();

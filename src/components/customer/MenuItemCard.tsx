@@ -59,6 +59,11 @@ export default function MenuItemCard({
 
   const dietaryBadges = getDietaryBadges();
 
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInView(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <Card
       className={cn(
@@ -79,8 +84,14 @@ export default function MenuItemCard({
       ref={(node) => {
         if (!node) return;
         const observer = new IntersectionObserver(
-          ([entry]) => setIsInView(entry.isIntersecting),
-          { threshold: 0.1, rootMargin: '-50px' }
+          ([entry]) => {
+            if (entry.isIntersecting) {
+              setIsInView(true);
+            } else {
+              setIsInView(false);
+            }
+          },
+          { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
         );
         observer.observe(node);
         return () => observer.disconnect();
