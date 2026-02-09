@@ -1,5 +1,5 @@
 'use client';
-
+import { useSettingsStore } from '@/store/settingsStore';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -49,7 +49,12 @@ interface BookingConfirmation {
 
 // ============= COMPONENT =============
 
-export function BookingPageClient({ restaurantName, city, state }: { restaurantName: string; city: string; state: string }) {
+export function BookingPageClient({ restaurantName: _restaurantName, city: _city, state: _state }: { restaurantName: string; city: string; state: string }) {
+  // Use settings from store instead of props for real-time sync
+  const storeSettings = useSettingsStore();
+  const restaurantName = storeSettings.restaurantName || _restaurantName;
+  const city = storeSettings.city || _city;
+  const state = storeSettings.state || _state;
   const { data: session } = useSession();
   const user = session?.user;
   const [selectedDate, setSelectedDate] = useState<Date>();
