@@ -44,6 +44,15 @@ export function HomePageClient({ restaurantName: initialRestaurantName, settings
               mission: data?.aboutMission || null,
               values: data?.aboutValues || null,
             });
+            
+            console.log('✅ Client fetched settings:', {
+              name: data?.name,
+              hasGalleryImages: !!data?.galleryImages,
+              galleryImagesCount: Array.isArray(data?.galleryImages) ? data.galleryImages.length : 0,
+              heroMediaType: data?.heroMediaType,
+              heroVideoUrl: data?.heroVideoUrl,
+              hasAbout: !!(data?.aboutStory || data?.aboutMission || data?.aboutValues),
+            });
           }
         } catch (error) {
           console.error('Failed to fetch settings:', error);
@@ -375,25 +384,24 @@ export function HomePageClient({ restaurantName: initialRestaurantName, settings
 
 // Hero Media Component
 function HeroMedia({ settings }: { settings: any }) {
-  const branding = settings?.branding || {};
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
-  // Determine media type
-  const mediaType = branding.heroMediaType || 'image';
-  const hasSlideshow = mediaType === 'slideshow' && branding.heroImages && branding.heroImages.length > 0;
-  const hasVideo = mediaType === 'video' && branding.heroVideoUrl;
-  const hasSingleImage = mediaType === 'image' && branding.heroImageUrl;
+  // Determine media type - hero fields are at root level of settings, not under branding
+  const mediaType = settings?.heroMediaType || 'image';
+  const hasSlideshow = mediaType === 'slideshow' && settings?.heroImages && settings.heroImages.length > 0;
+  const hasVideo = mediaType === 'video' && settings?.heroVideoUrl;
+  const hasSingleImage = mediaType === 'image' && settings?.heroImageUrl;
 
   // Auto-advance slideshow
   useEffect(() => {
-    if (hasSlideshow && branding.heroImages!.length > 1) {
+    if (hasSlideshow && settings.heroImages.length > 1) {
       const interval = setInterval(() => {
-        setCurrentSlideIndex((prev) => (prev + 1) % branding.heroImages!.length);
-      }, branding.heroSlideshowInterval || 5000);
+        setCurrentSlideIndex((prev) => (prev + 1) % settings.heroImages.length);
+      }, settings.heroSlideshowInterval || 5000);
       return () => clearInterval(interval);
     }
-  }, [hasSlideshow, branding.heroImages, branding.heroSlideshowInterval]);
+  }, [hasSlideshow, settings?.heroImages, settings?.heroSlideshowInterval]);
 
   // Parse video URL
   const getVideoEmbedUrl = (url: string) => {
@@ -445,7 +453,7 @@ function HeroMedia({ settings }: { settings: any }) {
 
   // Video rendering
   if (hasVideo) {
-    const videoData = getVideoEmbedUrl(branding.heroVideoUrl!);
+    const videoData = getVideoEmbedUrl(settings.heroVideoUrl);
     
     // Get video thumbnail
     const getVideoThumbnail = (url: string, type: string) => {
@@ -457,13 +465,13 @@ function HeroMedia({ settings }: { settings: any }) {
       }
       if (type === 'vimeo') {
         // Vimeo requires API call, use default image
-        return branding.heroImageUrl || '/images/hero-bg.jpg';
+        return settings?.heroImageUrl || '/images/hero-bg.jpg';
       }
       // For other types, use fallback
-      return branding.heroImageUrl || '/images/hero-bg.jpg';
+      return settings?.heroImageUrl || '/images/hero-bg.jpg';
     };
 
-    const thumbnailUrl = getVideoThumbnail(branding.heroVideoUrl!, videoData.type);
+    const thumbnailUrl = getVideoThumbnail(settings.heroVideoUrl, videoData.type);
 
     if (videoData.type === 'direct') {
       return (
@@ -573,9 +581,9 @@ function HeroMedia({ settings }: { settings: any }) {
 
     return (
       <div className="absolute inset-0 z-0 overflow-hidden">
-        {branding.heroImages!.map((img: string, index: number) => {
+        {settings.heroImages.map((img: string, index: number) => {
           const isActive = index === currentSlideIndex;
-          const animationDuration = (branding.heroSlideshowInterval || 5000) * 2;
+          const animationDuration = (settings.heroSlideshowInterval || 5000) * 2;
           
           return (
             <div
@@ -613,7 +621,7 @@ function HeroMedia({ settings }: { settings: any }) {
         
         {/* Slideshow indicators with animated progress */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-40 flex gap-3">
-          {branding.heroImages!.map((_: string, index: number) => (
+          {settings.heroImages.map((_: string, index: number) => (
             <button
               key={index}
               onClick={() => setCurrentSlideIndex(index)}
@@ -631,7 +639,7 @@ function HeroMedia({ settings }: { settings: any }) {
                   <div
                     className="absolute top-0 left-0 h-full bg-white rounded-full"
                     style={{
-                      animation: `slideProgress ${branding.heroSlideshowInterval || 5000}ms linear`,
+                      animation: `slideProgress ${settings.heroSlideshowInterval || 5000}ms linear`,
                       width: '0%',
                     }}
                   />
@@ -700,7 +708,7 @@ function HeroMedia({ settings }: { settings: any }) {
     <div className="absolute inset-0 z-0">
       <div className="absolute inset-0 scale-110">
         <Image
-          src={hasSingleImage ? branding.heroImageUrl! : '/images/hero-bg.jpg'}
+          src={hasSingleImage ? settings.heroImageUrl : '/images/hero-bg.jpg'}
           alt="Restaurant hero background"
           fill
           priority
