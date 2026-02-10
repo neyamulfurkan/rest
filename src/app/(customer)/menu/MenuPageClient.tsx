@@ -346,7 +346,7 @@ export function MenuPageClient({
       </div>
 
       {/* Recommended Items */}
-      <div className="pt-[90px] sm:pt-[95px] md:pt-[85px]">
+      <div className="pt-[130px] sm:pt-[130px] md:pt-[85px]">
         {restaurantId && (
           <RecommendedItems
             restaurantId={restaurantId}
