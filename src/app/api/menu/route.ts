@@ -127,19 +127,7 @@ export async function GET(request: NextRequest) {
       ? 'public, s-maxage=60, stale-while-revalidate=120'
       : 'public, s-maxage=300, stale-while-revalidate=600';
 
-    // Build response - return just the data array for simple requests
-    // If pagination params are provided, return full paginated response
-    if (validatedParams.page === 1 && validatedParams.limit === 20 && !searchParams.get('page')) {
-      // Simple request - return just data array
-      return NextResponse.json(menuItems as MenuItemWithRelations[], { 
-        status: 200,
-        headers: {
-          'Cache-Control': cacheControl,
-        },
-      });
-    }
-
-    // Paginated request - return full response
+    // Always return consistent structure with data array
     return NextResponse.json(
       {
         data: menuItems as MenuItemWithRelations[],
@@ -151,6 +139,7 @@ export async function GET(request: NextRequest) {
         },
       },
       {
+        status: 200,
         headers: {
           'Cache-Control': cacheControl,
         },

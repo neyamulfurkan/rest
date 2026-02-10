@@ -332,8 +332,8 @@ export async function getOrders(
       
       if (validStatuses.length > 0) {
         where.status = validStatuses.length > 1 
-          ? { in: validStatuses }
-          : validStatuses[0];
+          ? { in: validStatuses as OrderStatus[] }
+          : validStatuses[0] as OrderStatus;
       }
     }
 

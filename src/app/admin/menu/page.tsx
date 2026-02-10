@@ -147,20 +147,9 @@ export default function AdminMenuPage() {
     onSuccess: async (data, deletedId) => {
       console.log('Delete successful, refreshing data...');
       
-      // Immediately update cache to remove deleted item
-      queryClient.setQueryData(['menu-items', selectedCategory], (oldData: any) => {
-        if (!oldData) return oldData;
-        const items = Array.isArray(oldData) ? oldData : (oldData.data || []);
-        return items.filter((item: any) => item.id !== deletedId);
-      });
-      
-      // Clear all menu-related cache
-      queryClient.removeQueries({ queryKey: ['menu-items'] });
-      queryClient.removeQueries({ queryKey: ['categories'] });
-      
-      // Refetch fresh data
-      await queryClient.refetchQueries({ queryKey: ['menu-items'] });
-      await queryClient.refetchQueries({ queryKey: ['categories'] });
+      // Invalidate all menu queries to force refetch with fresh data
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       
       toast.success(data.message || 'Item deleted successfully');
       setDeletingItemId(null);
