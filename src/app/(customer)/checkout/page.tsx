@@ -808,8 +808,8 @@ return (
         noValidate
       >
       {/* Order Type Selector */}
-      <div className="bg-white rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-semibold text-neutral-900 mb-4">Order Type</h2>
+      <div className="bg-card rounded-2xl shadow-md p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Order Type</h2>
         
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -824,17 +824,17 @@ return (
               className={cn(
                 'flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all duration-200',
                 orderType === type
-                  ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)]'
+                  ? 'border-primary bg-primary/10'
                   : 'border-neutral-200 hover:border-neutral-300'
               )}
             >
               <Icon className={cn(
                 'w-6 h-6 mb-2',
-                orderType === type ? 'text-[hsl(var(--primary))]' : 'text-neutral-600'
+                orderType === type ? 'text-primary' : 'text-neutral-600'
               )} />
               <span className={cn(
                 'font-medium text-sm',
-                orderType === type ? 'text-[hsl(var(--primary))]' : 'text-neutral-600'
+                orderType === type ? 'text-primary' : 'text-neutral-600'
               )}>
                 {label}
               </span>
@@ -975,8 +975,8 @@ return (
       </div>
 
       
-      <div className="bg-white rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-semibold text-neutral-900 mb-4">Payment Method</h2>
+      <div className="bg-card rounded-2xl shadow-md p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Payment Method</h2>
         
         <div className="space-y-3">
           {[
@@ -991,22 +991,22 @@ return (
               className={cn(
                 'w-full flex items-center justify-between p-4 rounded-lg border-2 transition-all duration-200',
                 paymentMethod === method
-                  ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)]'
+                  ? 'border-primary bg-primary/10'
                   : 'border-neutral-200 hover:border-neutral-300'
               )}
             >
               <span className={cn(
                 'font-medium',
-                paymentMethod === method ? 'text-[hsl(var(--primary))]' : 'text-neutral-700'
+                paymentMethod === method ? 'text-primary' : 'text-neutral-700'
               )}>
                 {label}
               </span>
               <div className={cn(
                 'w-5 h-5 rounded-full border-2 flex items-center justify-center',
-                paymentMethod === method ? 'border-[hsl(var(--primary))]' : 'border-neutral-300'
+                paymentMethod === method ? 'border-primary' : 'border-neutral-300'
               )}>
                 {paymentMethod === method && (
-                  <div className="w-3 h-3 rounded-full bg-[hsl(var(--primary))]" />
+                  <div className="w-3 h-3 rounded-full bg-primary" />
                 )}
               </div>
             </button>
@@ -1017,7 +1017,7 @@ return (
 
       {/* Stripe Card Input - Only visible when Stripe is selected */}
       {paymentMethod === PAYMENT_METHOD.STRIPE && (
-        <div className="bg-white rounded-2xl shadow-md p-6 space-y-4">
+        <div className="bg-card rounded-2xl shadow-md p-6 space-y-4">
           <div className="rounded-lg border-2 border-neutral-200 p-4">
             <label className="block text-sm font-medium text-neutral-700 mb-3">
               Card Details
@@ -1048,8 +1048,8 @@ return (
       )}
 
       {/* Tip Selection */}
-      <div className="bg-white rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-semibold text-neutral-900 mb-4">Add Tip</h2>
+      <div className="bg-card rounded-2xl shadow-md p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Add Tip</h2>
         
         <div className="grid grid-cols-5 gap-3">
           {TIP_OPTIONS.map(({ label, value }) => (
@@ -1060,7 +1060,7 @@ return (
               className={cn(
                 'p-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium',
                 watchedTipPercentage === value
-                  ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]'
+                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-neutral-200 hover:border-neutral-300 text-neutral-700'
               )}
             >
@@ -1083,14 +1083,14 @@ return (
       </div>
 
       {/* Special Instructions */}
-      <div className="bg-white rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-semibold text-neutral-900 mb-4">Special Instructions</h2>
+      <div className="bg-card rounded-2xl shadow-md p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Special Instructions</h2>
         
         <textarea
           {...register('specialInstructions')}
           placeholder="Any special requests or dietary restrictions?"
           rows={4}
-          className="w-full px-4 py-3 border-2 border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 rounded-lg transition-colors duration-200 placeholder:text-neutral-400 resize-none"
+          className="w-full px-4 py-3 bg-background text-foreground border-2 border-input focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg transition-colors duration-200 placeholder:text-muted-foreground resize-none"
         />
         {errors.specialInstructions && (
           <p className="text-error-500 text-sm mt-1">{errors.specialInstructions.message}</p>
@@ -1146,8 +1146,8 @@ function OrderSummary({ items, subtotal, tipPercentage, deliveryFee, taxAmount, 
   const totalAmount = subtotal + taxAmount + serviceFee + deliveryFee + tipAmount;
 
   return (
-    <div className="bg-white rounded-2xl shadow-md p-6 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto">
-      <h2 className="text-xl font-semibold text-neutral-900 mb-4">Order Summary</h2>
+    <div className="bg-card rounded-2xl shadow-md p-6 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto">
+      <h2 className="text-xl font-semibold text-foreground mb-4">Order Summary</h2>
 
       {/* Items List */}
       <div className="space-y-3 mb-4">

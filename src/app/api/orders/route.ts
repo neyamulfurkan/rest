@@ -20,10 +20,12 @@ export async function GET(request: NextRequest) {
     // Get restaurantId from query params (required for unauthenticated requests)
     const { searchParams } = new URL(request.url);
     const restaurantId = searchParams.get('restaurantId');
+    const customerId = searchParams.get('customerId');
     
-    if (!restaurantId) {
+    // Require restaurantId UNLESS customerId is provided (customer order history)
+    if (!restaurantId && !customerId) {
       return NextResponse.json(
-        { success: false, error: 'Restaurant ID is required' },
+        { success: false, error: 'Restaurant ID or Customer ID is required' },
         { status: 400 }
       );
     }
