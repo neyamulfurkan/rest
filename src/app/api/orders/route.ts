@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const queryParams = {
       restaurantId: restaurantId,
       customerId: searchParams.get('customerId') || undefined,
-      status: statusParam || undefined,
+      status: statusParam && statusParam.trim() !== '' ? statusParam : undefined,
       type: searchParams.get('type') || undefined,
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,

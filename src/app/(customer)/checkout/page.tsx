@@ -824,26 +824,18 @@ return (
               className={cn(
                 'flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all duration-200',
                 orderType === type
-                  ? 'border-2'
+                  ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)]'
                   : 'border-neutral-200 hover:border-neutral-300'
               )}
-              style={orderType === type ? {
-                borderColor: branding.primaryColor,
-                backgroundColor: `${branding.primaryColor}15`
-              } : {}}
             >
               <Icon className={cn(
-                'w-6 h-6 mb-2'
-              )} 
-              style={{
-                color: orderType === type ? branding.primaryColor : '#525252'
-              }} />
+                'w-6 h-6 mb-2',
+                orderType === type ? 'text-[hsl(var(--primary))]' : 'text-neutral-600'
+              )} />
               <span className={cn(
-                'font-medium text-sm'
-              )}
-              style={{
-                color: orderType === type ? branding.primaryColor : '#525252'
-              }}>
+                'font-medium text-sm',
+                orderType === type ? 'text-[hsl(var(--primary))]' : 'text-neutral-600'
+              )}>
                 {label}
               </span>
             </button>
@@ -999,30 +991,22 @@ return (
               className={cn(
                 'w-full flex items-center justify-between p-4 rounded-lg border-2 transition-all duration-200',
                 paymentMethod === method
-                  ? ''
+                  ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)]'
                   : 'border-neutral-200 hover:border-neutral-300'
               )}
-              style={paymentMethod === method ? {
-                borderColor: branding.primaryColor,
-                backgroundColor: `${branding.primaryColor}15`
-              } : {}}
             >
               <span className={cn(
-                'font-medium'
-              )}
-              style={{
-                color: paymentMethod === method ? branding.primaryColor : '#404040'
-              }}>
+                'font-medium',
+                paymentMethod === method ? 'text-[hsl(var(--primary))]' : 'text-neutral-700'
+              )}>
                 {label}
               </span>
               <div className={cn(
-                'w-5 h-5 rounded-full border-2 flex items-center justify-center'
-              )}
-              style={{
-                borderColor: paymentMethod === method ? branding.primaryColor : '#d4d4d4'
-              }}>
+                'w-5 h-5 rounded-full border-2 flex items-center justify-center',
+                paymentMethod === method ? 'border-[hsl(var(--primary))]' : 'border-neutral-300'
+              )}>
                 {paymentMethod === method && (
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: branding.primaryColor }} />
+                  <div className="w-3 h-3 rounded-full bg-[hsl(var(--primary))]" />
                 )}
               </div>
             </button>
@@ -1076,14 +1060,9 @@ return (
               className={cn(
                 'p-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium',
                 watchedTipPercentage === value
-                  ? ''
+                  ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]'
                   : 'border-neutral-200 hover:border-neutral-300 text-neutral-700'
               )}
-              style={watchedTipPercentage === value ? {
-                borderColor: branding.primaryColor,
-                backgroundColor: `${branding.primaryColor}15`,
-                color: branding.primaryColor
-              } : {}}
             >
               {label}
             </button>
@@ -1122,10 +1101,7 @@ return (
       <Button
         type="submit"
         disabled={isSubmitting || !restaurantId}
-        className="w-full h-12 text-base font-semibold text-white"
-        style={{
-          background: `linear-gradient(to right, ${branding.primaryColor}, ${branding.primaryColor}dd)`,
-        }}
+        className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
       >
         {!restaurantId ? (
           <>
@@ -1165,7 +1141,6 @@ interface OrderSummaryProps {
 
 function OrderSummary({ items, subtotal, tipPercentage, deliveryFee, taxAmount, serviceFee }: OrderSummaryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { branding } = useSettingsStore();
 
   const tipAmount = tipPercentage >= 0 ? (subtotal * tipPercentage) / 100 : 0;
   const totalAmount = subtotal + taxAmount + serviceFee + deliveryFee + tipAmount;
@@ -1251,7 +1226,7 @@ function OrderSummary({ items, subtotal, tipPercentage, deliveryFee, taxAmount, 
       {/* Total */}
       <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
         <span className="text-lg font-bold text-neutral-900">Total</span>
-        <span className="text-2xl font-bold" style={{ color: branding.primaryColor }}>${totalAmount.toFixed(2)}</span>
+        <span className="text-2xl font-bold text-[hsl(var(--primary))]">${totalAmount.toFixed(2)}</span>
       </div>
     </div>
   );
