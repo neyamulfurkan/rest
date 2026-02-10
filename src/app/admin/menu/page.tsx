@@ -88,15 +88,23 @@ export default function AdminMenuPage() {
         ? `/api/menu?categoryId=${selectedCategory}&limit=1000`
         : '/api/menu?limit=1000';
       console.log('Fetching menu items from:', url);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch menu items');
       const result = await response.json();
       console.log('Menu items response:', result);
-      return Array.isArray(result) ? result : (result.data || []);
+      const items = Array.isArray(result) ? result : (result.data || []);
+      console.log('Parsed items count:', items.length);
+      return items;
     },
-    staleTime: 0, // Always fetch fresh data
-    refetchOnMount: true,
-    refetchOnWindowFocus: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   const menuItems = menuItemsData || [];
@@ -242,6 +250,14 @@ export default function AdminMenuPage() {
   };
 
   const handleDeleteItem = (id: string) => {
+    // Verify item exists before attempting delete
+    const itemExists = filteredItems?.some((item: MenuItemWithRelations) => item.id === id);
+    if (!itemExists) {
+      toast.error('Item no longer exists');
+      // Force refresh to sync UI with database
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+      return;
+    }
     setDeletingItemId(id);
   };
 
