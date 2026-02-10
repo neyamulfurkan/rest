@@ -133,8 +133,15 @@ export default function AdminMenuPage() {
       }
       return data;
     },
-    onSuccess: async (data, id) => {
+    onSuccess: async (data, deletedId) => {
       console.log('Delete successful, refreshing data...');
+      
+      // Immediately update cache to remove deleted item
+      queryClient.setQueryData(['menu-items', selectedCategory], (oldData: any) => {
+        if (!oldData) return oldData;
+        const items = Array.isArray(oldData) ? oldData : (oldData.data || []);
+        return items.filter((item: any) => item.id !== deletedId);
+      });
       
       // Clear all menu-related cache
       queryClient.removeQueries({ queryKey: ['menu-items'] });
@@ -236,6 +243,12 @@ export default function AdminMenuPage() {
   };
 
   const handleToggleAvailability = (id: string, currentState: boolean) => {
+    // Check if item still exists in the list
+    const itemExists = menuItems?.some((item: MenuItemWithRelations) => item.id === id);
+    if (!itemExists) {
+      console.warn('Item no longer exists, skipping availability toggle');
+      return;
+    }
     toggleAvailabilityMutation.mutate({ id, isAvailable: !currentState });
   };
 

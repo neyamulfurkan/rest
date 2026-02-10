@@ -157,6 +157,7 @@ const nextConfig = {
   // Image optimization configuration
   images: {
     unoptimized: false,
+    loader: 'default',
     remotePatterns: [
       {
         protocol: 'https',
@@ -184,11 +185,18 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com'
+        hostname: 'images.unsplash.com',
+        pathname: '/**'
       },
       {
         protocol: 'https',
-        hostname: 'source.unsplash.com'
+        hostname: 'source.unsplash.com',
+        pathname: '/**'
+      },
+      {
+        protocol: 'https',
+        hostname: 'unsplash.com',
+        pathname: '/**'
       },
       {
         protocol: 'https',
