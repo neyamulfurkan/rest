@@ -34,8 +34,8 @@ export function MenuPageClient({
 }) {
   const { menuItems: clientMenuItems, categories: clientCategories, isLoading, error } = useMenu();
   // Use server-side data initially, then client-side data
-  const menuItems = clientMenuItems || initialMenuItems;
-  const categories = clientCategories || initialCategories;
+  const menuItems = initialMenuItems && initialMenuItems.length > 0 ? initialMenuItems : (clientMenuItems || []);
+  const categories = initialCategories && initialCategories.length > 0 ? initialCategories : (clientCategories || []);
   const { addItem } = useCart();
   const branding = settings?.branding || {};
   const restaurantId = settings?.id || 'rest123456789';
@@ -71,9 +71,9 @@ export function MenuPageClient({
 
   // Filter and sort menu items
   const filteredAndSortedItems = useMemo(() => {
-    if (!menuItems) return [];
+    if (!menuItems || !Array.isArray(menuItems) || menuItems.length === 0) return [];
 
-    let filtered = menuItems;
+    let filtered = menuItems.filter((item) => item && item.isAvailable !== false);
 
     // Filter by search query
     if (debouncedSearch) {

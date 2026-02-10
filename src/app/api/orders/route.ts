@@ -59,9 +59,17 @@ export async function GET(request: NextRequest) {
       search: queryParams.search,
     };
 
-        // Fetch orders using service
+        // Fetch orders using service - prioritize restaurantId
+    const idToUse = restaurantId || customerId;
+    if (!idToUse) {
+      return NextResponse.json(
+        { success: false, error: 'Restaurant ID or Customer ID is required' },
+        { status: 400 }
+      );
+    }
+    
     const result: PaginatedResponse<OrderWithRelations> = await getOrders(
-      restaurantId || customerId!,
+      idToUse,
       filters,
       validatedQuery.page,
       validatedQuery.limit
