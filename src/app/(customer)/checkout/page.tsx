@@ -155,8 +155,8 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-screen py-8 flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-neutral-900 mb-4">Your cart is empty</h2>
-          <p className="text-neutral-600 mb-6">Add some items to your cart to checkout</p>
+          <h2 className="text-2xl font-bold mb-4" style={{ color: 'hsl(var(--foreground))' }}>Your cart is empty</h2>
+          <p className="mb-6" style={{ color: 'hsl(var(--muted-foreground))' }}>Add some items to your cart to checkout</p>
         </div>
       </div>
     );
@@ -823,7 +823,7 @@ return (
       >
       {/* Order Type Selector */}
       <div className="bg-card rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4">Order Type</h2>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'hsl(var(--foreground))' }}>Order Type</h2>
         
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -867,7 +867,7 @@ return (
               transition={{ duration: 0.2 }}
               className="mt-4"
             >
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>
                 Table Number
               </label>
               <Input
@@ -890,7 +890,7 @@ return (
               transition={{ duration: 0.2 }}
               className="mt-4"
             >
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>
                 Preferred Pickup Time
               </label>
               <Input
@@ -914,7 +914,7 @@ return (
               className="mt-4 space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>
                   Street Address
                 </label>
                 <Input
@@ -929,7 +929,7 @@ return (
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>
                     City
                   </label>
                   <Input
@@ -940,7 +940,7 @@ return (
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>
                     State
                   </label>
                   <Input
@@ -953,7 +953,7 @@ return (
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>
                     Zip Code
                   </label>
                   <Input
@@ -964,7 +964,7 @@ return (
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>
                     Phone
                   </label>
                   <Input
@@ -990,7 +990,7 @@ return (
 
       
       <div className="bg-card rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4">Payment Method</h2>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'hsl(var(--foreground))' }}>Payment Method</h2>
         
         <div className="space-y-3">
           {[
@@ -1011,8 +1011,9 @@ return (
             >
               <span className={cn(
                 'font-medium',
-                paymentMethod === method ? 'text-primary' : 'text-neutral-700'
-              )}>
+                paymentMethod === method ? 'text-primary' : ''
+              )}
+              style={{ color: paymentMethod === method ? 'hsl(var(--primary))' : 'hsl(var(--foreground))' }}>
                 {label}
               </span>
               <div className={cn(
@@ -1063,7 +1064,7 @@ return (
 
       {/* Tip Selection */}
       <div className="bg-card rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4">Add Tip</h2>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'hsl(var(--foreground))' }}>Add Tip</h2>
         
         <div className="grid grid-cols-5 gap-3">
           {TIP_OPTIONS.map(({ label, value }) => (
@@ -1098,7 +1099,7 @@ return (
 
       {/* Special Instructions */}
       <div className="bg-card rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4">Special Instructions</h2>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'hsl(var(--foreground))' }}>Special Instructions</h2>
         
         <textarea
           {...register('specialInstructions')}
@@ -1161,14 +1162,15 @@ function OrderSummary({ items, subtotal, tipPercentage, deliveryFee, taxAmount, 
 
   return (
     <div className="bg-card rounded-2xl shadow-md p-6 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto">
-      <h2 className="text-xl font-semibold text-foreground mb-4">Order Summary</h2>
+      <h2 className="text-xl font-semibold mb-4" style={{ color: 'hsl(var(--foreground))' }}>Order Summary</h2>
 
       {/* Items List */}
       <div className="space-y-3 mb-4">
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center justify-between text-neutral-700 hover:text-neutral-900 transition-colors"
+          className="w-full flex items-center justify-between transition-colors"
+          style={{ color: 'hsl(var(--foreground))' }}
         >
           <span className="font-medium">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
           {isExpanded ? (
@@ -1190,16 +1192,16 @@ function OrderSummary({ items, subtotal, tipPercentage, deliveryFee, taxAmount, 
               {items.map((item: { menuItemId: string; quantity: number; name: string; customizations?: Array<{ optionName: string }>; price: number }) => (
                 <div key={item.menuItemId} className="flex justify-between text-sm">
                   <div className="flex-1">
-                    <p className="font-medium text-neutral-900">
+                    <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
                       {item.quantity}x {item.name}
                     </p>
                     {item.customizations && item.customizations.length > 0 && (
-                      <p className="text-neutral-500 text-xs mt-1">
+                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
                         {item.customizations.map((c: any) => c.optionName).join(', ')}
                       </p>
                     )}
                   </div>
-                  <p className="font-medium text-neutral-900">
+                  <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
                     ${(item.price * item.quantity).toFixed(2)}
                   </p>
                 </div>
@@ -1211,7 +1213,7 @@ function OrderSummary({ items, subtotal, tipPercentage, deliveryFee, taxAmount, 
 
       {/* Pricing Breakdown */}
       <div className="space-y-3 py-4 border-t border-neutral-200">
-        <div className="flex justify-between text-neutral-700">
+        <div className="flex justify-between" style={{ color: 'hsl(var(--muted-foreground))' }}>
           <span>Subtotal</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
@@ -1220,18 +1222,18 @@ function OrderSummary({ items, subtotal, tipPercentage, deliveryFee, taxAmount, 
           <span>${taxAmount.toFixed(2)}</span>
         </div>
         {serviceFee > 0 && (
-          <div className="flex justify-between text-neutral-700">
+          <div className="flex justify-between" style={{ color: 'hsl(var(--muted-foreground))' }}>
             <span>Service Fee</span>
             <span>${serviceFee.toFixed(2)}</span>
           </div>
         )}
         {deliveryFee > 0 && (
-          <div className="flex justify-between text-neutral-700">
+          <div className="flex justify-between" style={{ color: 'hsl(var(--muted-foreground))' }}>
             <span>Delivery Fee</span>
             <span>${deliveryFee.toFixed(2)}</span>
           </div>
         )}
-        <div className="flex justify-between text-neutral-700">
+        <div className="flex justify-between" style={{ color: 'hsl(var(--muted-foreground))' }}>
           <span>Tip ({tipPercentage}%)</span>
           <span>${tipAmount.toFixed(2)}</span>
         </div>
@@ -1239,7 +1241,7 @@ function OrderSummary({ items, subtotal, tipPercentage, deliveryFee, taxAmount, 
 
       {/* Total */}
       <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
-        <span className="text-lg font-bold text-neutral-900">Total</span>
+        <span className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>Total</span>
         <span className="text-2xl font-bold text-[hsl(var(--primary))]">${totalAmount.toFixed(2)}</span>
       </div>
     </div>

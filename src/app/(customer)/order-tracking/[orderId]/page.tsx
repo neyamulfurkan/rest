@@ -268,10 +268,10 @@ export default function OrderTrackingPage() {
       >
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-neutral-900">
+          <h1 className="text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
             {isCancelledOrRejected ? 'Order Status' : 'Track Your Order'}
           </h1>
-          <p className="mt-2 text-neutral-600">Order #{order.orderNumber}</p>
+          <p className="mt-2" style={{ color: 'hsl(var(--muted-foreground))' }}>Order #{order.orderNumber}</p>
         </div>
 
         {/* Progress Stepper */}
@@ -310,16 +310,16 @@ export default function OrderTrackingPage() {
               <div className="flex items-center">
                 <Clock className="mr-3 h-8 w-8" style={{ color: `hsl(var(--primary))` }} />
                 <div>
-                  <p className="text-sm font-medium text-neutral-600">
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     {order.type === 'DELIVERY' ? 'Estimated Delivery' : 'Estimated Pickup'}
                   </p>
-                  <p className="text-2xl font-bold text-neutral-900">{timeRemaining}</p>
+                  <p className="text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>{timeRemaining}</p>
                 </div>
               </div>
               {order.type === 'DELIVERY' && order.deliveryAddress && (
                 <div className="text-right">
-                  <p className="text-sm font-medium text-neutral-600">Delivering to</p>
-                  <p className="text-sm text-neutral-900">{order.deliveryAddress.street}</p>
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Delivering to</p>
+                  <p className="text-sm" style={{ color: 'hsl(var(--foreground))' }}>{order.deliveryAddress.street}</p>
                 </div>
               )}
             </div>
@@ -330,7 +330,7 @@ export default function OrderTrackingPage() {
         <Card className="mb-6 overflow-hidden" style={{ backgroundColor: 'hsl(var(--card))' }}>
           <div className="border-b border-neutral-200 bg-neutral-50 p-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-neutral-900">Order Details</h2>
+              <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Order Details</h2>
               <Badge
                 style={{
                   backgroundColor: order.status === ORDER_STATUS.DELIVERED
@@ -354,25 +354,25 @@ export default function OrderTrackingPage() {
             {/* Order Info */}
             <div className="mb-6 grid gap-4 md:grid-cols-2">
               <div>
-                <p className="text-sm font-medium text-neutral-600">Order Type</p>
+                <p className="text-sm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Order Type</p>
                 <p className="mt-1 text-base text-neutral-900">
                   {order.type.replace(/_/g, ' ')}
                 </p>
               </div>
               <div>
-                <p className="text-sm font-medium text-neutral-600">Order Time</p>
+                <p className="text-sm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Order Time</p>
                 <p className="mt-1 text-base text-neutral-900">
                   {formatDate(new Date(order.createdAt))}
                 </p>
               </div>
               {order.type === 'DINE_IN' && order.tableNumber && (
                 <div>
-                  <p className="text-sm font-medium text-neutral-600">Table Number</p>
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Table Number</p>
                   <p className="mt-1 text-base text-neutral-900">{order.tableNumber}</p>
                 </div>
               )}
               <div>
-                <p className="text-sm font-medium text-neutral-600">Payment Method</p>
+                <p className="text-sm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Payment Method</p>
                 <p className="mt-1 text-base text-neutral-900">
                   {order.paymentMethod.replace(/_/g, ' ')}
                 </p>
@@ -385,7 +385,7 @@ export default function OrderTrackingPage() {
                 onClick={() => setIsItemsExpanded(!isItemsExpanded)}
                 className="flex w-full items-center justify-between text-left"
               >
-                <h3 className="text-base font-semibold text-neutral-900">
+                <h3 className="text-base font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
                   Items ({order.orderItems.length})
                 </h3>
                 {isItemsExpanded ? (
@@ -409,14 +409,14 @@ export default function OrderTrackingPage() {
                       className="flex items-start justify-between border-b border-neutral-100 pb-3 last:border-0"
                     >
                       <div className="flex-1">
-                        <p className="font-medium text-neutral-900">
+                        <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
                           {item.quantity}x {item.name}
                         </p>
                         {item.customizations && Array.isArray(item.customizations) && (
                           <div className="mt-1 space-y-1">
                             {(item.customizations as Array<{ groupName: string; optionName: string; price: number }>).map(
                               (custom, idx) => (
-                                <p key={idx} className="text-sm text-neutral-600">
+                                <p key={idx} className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                   + {custom.optionName}
                                   {custom.price > 0 && ` (+${formatCurrency(custom.price)})`}
                                 </p>
@@ -425,7 +425,7 @@ export default function OrderTrackingPage() {
                           </div>
                         )}
                         {item.specialInstructions && (
-                          <p className="mt-1 text-sm italic text-neutral-600">
+                          <p className="mt-1 text-sm italic" style={{ color: 'hsl(var(--muted-foreground))' }}>
                             Note: {item.specialInstructions}
                           </p>
                         )}
@@ -442,29 +442,29 @@ export default function OrderTrackingPage() {
             {/* Order Summary */}
             <div className="mt-6 space-y-2 border-t border-neutral-200 pt-6">
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-600">Subtotal</span>
-                <span className="text-neutral-900">{formatCurrency(order.subtotal)}</span>
+                <span style={{ color: 'hsl(var(--muted-foreground))' }}>Subtotal</span>
+                <span style={{ color: 'hsl(var(--foreground))' }}>{formatCurrency(order.subtotal)}</span>
               </div>
               {order.deliveryFee > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-600">Delivery Fee</span>
-                  <span className="text-neutral-900">{formatCurrency(order.deliveryFee)}</span>
+                  <span style={{ color: 'hsl(var(--muted-foreground))' }}>Delivery Fee</span>
+                  <span style={{ color: 'hsl(var(--foreground))' }}>{formatCurrency(order.deliveryFee)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-600">Tax</span>
-                <span className="text-neutral-900">{formatCurrency(order.taxAmount)}</span>
+                <span style={{ color: 'hsl(var(--muted-foreground))' }}>Tax</span>
+                <span style={{ color: 'hsl(var(--foreground))' }}>{formatCurrency(order.taxAmount)}</span>
               </div>
               {order.serviceFee > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-600">Service Fee</span>
-                  <span className="text-neutral-900">{formatCurrency(order.serviceFee)}</span>
+                  <span style={{ color: 'hsl(var(--muted-foreground))' }}>Service Fee</span>
+                  <span style={{ color: 'hsl(var(--foreground))' }}>{formatCurrency(order.serviceFee)}</span>
                 </div>
               )}
               {order.tipAmount > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-600">Tip</span>
-                  <span className="text-neutral-900">{formatCurrency(order.tipAmount)}</span>
+                  <span style={{ color: 'hsl(var(--muted-foreground))' }}>Tip</span>
+                  <span style={{ color: 'hsl(var(--foreground))' }}>{formatCurrency(order.tipAmount)}</span>
                 </div>
               )}
               {order.discountAmount > 0 && (
@@ -474,8 +474,8 @@ export default function OrderTrackingPage() {
                 </div>
               )}
               <div className="flex justify-between border-t border-neutral-200 pt-2 text-lg font-bold">
-                <span className="text-neutral-900">Total</span>
-                <span className="text-neutral-900">{formatCurrency(order.totalAmount)}</span>
+                <span style={{ color: 'hsl(var(--foreground))' }}>Total</span>
+                <span style={{ color: 'hsl(var(--foreground))' }}>{formatCurrency(order.totalAmount)}</span>
               </div>
             </div>
           </div>
@@ -484,7 +484,7 @@ export default function OrderTrackingPage() {
         {/* Live Updates Card */}
         {statusUpdates.length > 0 && (
           <Card className="mb-6 p-6" style={{ backgroundColor: 'hsl(var(--card))' }}>
-            <h2 className="mb-4 text-lg font-semibold text-neutral-900">Live Updates</h2>
+            <h2 className="mb-4 text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Live Updates</h2>
             <div className="space-y-4">
               {statusUpdates.map((update, index) => (
                 <motion.div
@@ -498,13 +498,13 @@ export default function OrderTrackingPage() {
                     <div className="h-2 w-2 rounded-full" style={{ backgroundColor: `hsl(var(--primary))` }} />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-neutral-900">
+                    <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
                       {getStatusMessage(update.status)}
                     </p>
                     {update.note && (
-                      <p className="mt-1 text-sm text-neutral-600">{update.note}</p>
+                      <p className="mt-1 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{update.note}</p>
                     )}
-                    <p className="mt-1 text-xs text-neutral-500">
+                    <p className="mt-1 text-xs" style={{ color: 'hsl(var(--muted-foreground) / 0.7)' }}>
                       {formatDate(new Date(update.createdAt))}
                     </p>
                   </div>

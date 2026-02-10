@@ -150,7 +150,7 @@ export function OrdersTable({ orders, onRowClick, onPrint }: OrdersTableProps) {
               </TableCell>
               <TableCell>
                 <div>
-                  <p className="font-medium text-neutral-900">
+                  <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
                     {order.customer.name}
                   </p>
                   <p className="text-sm text-neutral-500">
@@ -182,7 +182,7 @@ export function OrdersTable({ orders, onRowClick, onPrint }: OrdersTableProps) {
               </TableCell>
               <TableCell>
                 <div>
-                  <p className="font-medium text-neutral-900">
+                  <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
                     {format(new Date(order.createdAt), 'MMM d, yyyy')}
                   </p>
                   <p className="text-sm text-neutral-500">
