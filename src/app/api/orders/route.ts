@@ -59,9 +59,9 @@ export async function GET(request: NextRequest) {
       search: queryParams.search,
     };
 
-    // Fetch orders using service
+        // Fetch orders using service
     const result: PaginatedResponse<OrderWithRelations> = await getOrders(
-      restaurantId,
+      restaurantId || customerId!,
       filters,
       validatedQuery.page,
       validatedQuery.limit

@@ -77,9 +77,9 @@ export default async function MenuPage() {
     settings = settingsData.data || {};
     
     // Fetch menu items
-    const menuResponse = await fetch(`${baseUrl}/api/menu`, { cache: 'no-store' });
+    const menuResponse = await fetch(`${baseUrl}/api/menu?limit=1000`, { cache: 'no-store' });
     const menuData = await menuResponse.json();
-    initialMenuItems = menuData.data || [];
+    initialMenuItems = Array.isArray(menuData) ? menuData : (menuData.data || []);
     
     // Fetch categories
     const categoriesResponse = await fetch(`${baseUrl}/api/menu/categories`, { cache: 'force-cache', next: { revalidate: 3600 } });

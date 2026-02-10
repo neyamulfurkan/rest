@@ -85,8 +85,8 @@ export default function AdminMenuPage() {
     queryKey: ['menu-items', selectedCategory],
     queryFn: async () => {
       const url = selectedCategory
-        ? `/api/menu?categoryId=${selectedCategory}`
-        : '/api/menu';
+        ? `/api/menu?categoryId=${selectedCategory}&limit=1000`
+        : '/api/menu?limit=1000';
       console.log('Fetching menu items from:', url);
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch menu items');
@@ -128,16 +128,29 @@ export default function AdminMenuPage() {
       console.log('Delete response status:', response.status);
       const data = await response.json();
       console.log('Delete response data:', data);
-      if (!response.ok) throw new Error('Failed to delete item');
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete item');
+      }
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-      toast.success('Item deleted successfully');
+    onSuccess: async (data, id) => {
+      console.log('Delete successful, refreshing data...');
+      
+      // Clear all menu-related cache
+      queryClient.removeQueries({ queryKey: ['menu-items'] });
+      queryClient.removeQueries({ queryKey: ['categories'] });
+      
+      // Refetch fresh data
+      await queryClient.refetchQueries({ queryKey: ['menu-items'] });
+      await queryClient.refetchQueries({ queryKey: ['categories'] });
+      
+      toast.success(data.message || 'Item deleted successfully');
       setDeletingItemId(null);
     },
-    onError: () => {
-      toast.error('Failed to delete item');
+    onError: (error: any) => {
+      console.error('Delete error:', error);
+      toast.error(error.message || 'Failed to delete item');
+      setDeletingItemId(null);
     },
   });
 

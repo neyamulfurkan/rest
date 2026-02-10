@@ -33,6 +33,9 @@ interface UseMenuReturn {
 async function fetchMenu(filters?: MenuItemFilters): Promise<MenuData> {
   const params = new URLSearchParams();
   
+  // Always fetch all items (no pagination limit)
+  params.append('limit', '1000');
+  
   if (filters?.categoryId) {
     params.append('categoryId', filters.categoryId);
   }
@@ -53,7 +56,7 @@ async function fetchMenu(filters?: MenuItemFilters): Promise<MenuData> {
   }
 
   const queryString = params.toString();
-  const menuUrl = `/api/menu${queryString ? `?${queryString}` : ''}`;
+  const menuUrl = `/api/menu?${queryString}`;
   const categoriesUrl = '/api/menu?type=categories';
 
   // Fetch both menu items and categories in parallel
