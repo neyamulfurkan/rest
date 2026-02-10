@@ -164,7 +164,7 @@ export const menuItemQuerySchema = z.object({
   sortBy: z.enum(['name', 'price', 'sortOrder', 'createdAt']).default('sortOrder'),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
   page: z.number().int().positive().default(1),
-  limit: z.number().int().positive().max(100).default(20),
+  limit: z.number().int().positive().max(5000).default(20),
 });
 
 export const categoryQuerySchema = z.object({
