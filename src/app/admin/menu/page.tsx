@@ -323,9 +323,9 @@ export default function AdminMenuPage() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
-        <div className="p-4 md:p-6">
+        <div className="p-4 md:p-6 pt-6 md:pt-6">
           {/* Top Bar */}
-          <div className="mb-4 md:mb-6 space-y-3 md:space-y-0 md:flex md:items-center md:justify-between">
+          <div className="mb-4 md:mb-6 space-y-3 md:space-y-0 md:flex md:items-center md:justify-between mt-2 md:mt-0">
             {/* Search and Mobile Category Button */}
             <div className="flex items-center gap-2 md:gap-4">
               {/* Mobile Category Button */}
