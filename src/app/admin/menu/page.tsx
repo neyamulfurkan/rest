@@ -94,6 +94,9 @@ export default function AdminMenuPage() {
       console.log('Menu items response:', result);
       return Array.isArray(result) ? result : (result.data || []);
     },
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   const menuItems = menuItemsData || [];
@@ -555,6 +558,7 @@ function MenuItemCard({ item, onEdit, onDelete, onToggleAvailability }: MenuItem
             fill
             className="object-cover"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            unoptimized={item.imageUrl.includes('unsplash.com')}
           />
         ) : (
           <div className="flex h-full items-center justify-center">
@@ -656,6 +660,7 @@ function MenuItemsTable({ items, onEdit, onDelete, onToggleAvailability }: MenuI
                       fill
                       className="object-cover"
                       sizes="56px"
+                      unoptimized={item.imageUrl.includes('unsplash.com')}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-2xl">

@@ -175,8 +175,11 @@ export async function DELETE(
   try {
     const { id } = params;
 
+    console.log('[DELETE] Attempting to delete menu item:', id);
+
     // Validate ID format
     if (!id || typeof id !== 'string') {
+      console.log('[DELETE] Invalid ID format');
       return NextResponse.json(
         { success: false, error: 'Invalid menu item ID' },
         { status: 400 }
@@ -194,11 +197,14 @@ export async function DELETE(
     });
 
     if (!existingItem) {
+      console.log('[DELETE] Menu item not found in database:', id);
       return NextResponse.json(
         { success: false, error: 'Menu item not found' },
         { status: 404 }
       );
     }
+
+    console.log('[DELETE] Menu item found, has order items:', existingItem.orderItems.length > 0);
 
     // Check if item has order history
     if (existingItem.orderItems.length > 0) {
@@ -222,6 +228,8 @@ export async function DELETE(
     await prisma.menuItem.delete({
       where: { id },
     });
+
+    console.log('[DELETE] Menu item permanently deleted:', id);
 
     return NextResponse.json({
       success: true,
