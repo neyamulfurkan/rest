@@ -85,8 +85,8 @@ export default function AdminMenuPage() {
     queryKey: ['menu-items', selectedCategory],
     queryFn: async () => {
       const url = selectedCategory
-        ? `/api/menu?categoryId=${selectedCategory}&limit=1000`
-        : '/api/menu?limit=1000';
+        ? `/api/menu?categoryId=${selectedCategory}&limit=1000&includeUnavailable=true`
+        : '/api/menu?limit=1000&includeUnavailable=true';
       console.log('Fetching menu items from:', url);
       const response = await fetch(url, {
         cache: 'no-store',
@@ -97,7 +97,7 @@ export default function AdminMenuPage() {
       if (!response.ok) throw new Error('Failed to fetch menu items');
       const result = await response.json();
       console.log('Menu items response:', result);
-      const items = Array.isArray(result) ? result : (result.data || []);
+      const items = result.data || [];
       console.log('Parsed items count:', items.length);
       return items;
     },
