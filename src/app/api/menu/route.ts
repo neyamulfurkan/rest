@@ -65,9 +65,13 @@ export async function GET(request: NextRequest) {
     const validatedParams = menuItemQuerySchema.parse(queryParams);
 
     // Build where clause
-    const where: any = {
-      restaurantId: searchParams.get('restaurantId') || undefined, // Optional restaurant filter
-    };
+    const where: any = {};
+    
+    // Only filter by restaurantId if explicitly provided
+    const restaurantIdParam = searchParams.get('restaurantId');
+    if (restaurantIdParam) {
+      where.restaurantId = restaurantIdParam;
+    }
 
     if (validatedParams.categoryId) {
       where.categoryId = validatedParams.categoryId;

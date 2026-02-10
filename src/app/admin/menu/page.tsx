@@ -144,18 +144,39 @@ export default function AdminMenuPage() {
       }
       return data;
     },
-    onSuccess: async (data, deletedId) => {
-      console.log('Delete successful, refreshing data...');
+    onMutate: async (deletedId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['menu-items'] });
       
-      // Invalidate all menu queries to force refetch with fresh data
-      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      // Snapshot previous value
+      const previousItems = queryClient.getQueryData(['menu-items', selectedCategory]);
       
+      // Optimistically update by removing item
+      queryClient.setQueryData(['menu-items', selectedCategory], (old: any) => {
+        if (!old) return old;
+        const items = Array.isArray(old) ? old : (old.data || []);
+        const filtered = items.filter((item: any) => item.id !== deletedId);
+        return Array.isArray(old) ? filtered : { ...old, data: filtered };
+      });
+      
+      return { previousItems };
+    },
+    onSuccess: async (data) => {
+      console.log('Delete successful');
       toast.success(data.message || 'Item deleted successfully');
       setDeletingItemId(null);
+      
+      // Invalidate to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
     },
-    onError: (error: any) => {
+    onError: (error: any, deletedId, context) => {
       console.error('Delete error:', error);
+      
+      // Rollback optimistic update
+      if (context?.previousItems) {
+        queryClient.setQueryData(['menu-items', selectedCategory], context.previousItems);
+      }
+      
       toast.error(error.message || 'Failed to delete item');
       setDeletingItemId(null);
     },
