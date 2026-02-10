@@ -102,6 +102,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, isEmpty } = useCart();
   const [isMounted, setIsMounted] = useState(false);
+  const [canCheckCart, setCanCheckCart] = useState(false);
   
   // Shared state between form and summary
   const [tipPercentage, setTipPercentage] = useState(15);
@@ -115,9 +116,22 @@ export default function CheckoutPage() {
     setIsMounted(true);
   }, []);
 
-  // Redirect if cart is empty (client-side only)
+  // Wait for cart hydration before checking
   useEffect(() => {
-    if (isMounted && isEmpty) {
+    if (!isMounted) return;
+    
+    const timer = setTimeout(() => {
+      setCanCheckCart(true);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [isMounted]);
+
+  // Redirect if cart is empty (only after hydration)
+  useEffect(() => {
+    if (!canCheckCart) return;
+    
+    if (isEmpty) {
       toast({
         title: "Cart Empty",
         description: "Your cart is empty",
@@ -125,7 +139,7 @@ export default function CheckoutPage() {
       });
       router.push('/menu');
     }
-  }, [isEmpty, router, isMounted]);
+  }, [isEmpty, router, canCheckCart]);
 
   // Show loading state during hydration
   if (!isMounted) {
