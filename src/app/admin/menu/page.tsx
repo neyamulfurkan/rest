@@ -85,8 +85,8 @@ export default function AdminMenuPage() {
     queryKey: ['menu-items', selectedCategory],
     queryFn: async () => {
       const url = selectedCategory
-        ? `/api/menu?categoryId=${selectedCategory}&limit=1000&includeUnavailable=true`
-        : '/api/menu?limit=1000&includeUnavailable=true';
+        ? `/api/menu?categoryId=${selectedCategory}&limit=1000`
+        : '/api/menu?limit=1000';
       console.log('Fetching menu items from:', url);
       const response = await fetch(url, {
         cache: 'no-store',
