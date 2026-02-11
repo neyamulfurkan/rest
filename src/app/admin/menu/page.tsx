@@ -225,14 +225,27 @@ export default function AdminMenuPage() {
       
       return responseData;
     },
-    onSuccess: async () => {
+    onSuccess: async (responseData) => {
       toast.success(editingItem ? 'Item updated successfully' : 'Item created successfully');
       setIsFormOpen(false);
       setEditingItem(null);
       
-      // Invalidate and refetch immediately
+      // If creating new item, optimistically add it to cache
+      if (!editingItem && responseData.data) {
+        queryClient.setQueryData(['menu-items', selectedCategory], (old: any) => {
+          if (!old || !Array.isArray(old)) return [responseData.data];
+          return [...old, responseData.data];
+        });
+      }
+      
+      // Invalidate all menu queries to ensure fresh data everywhere
       await queryClient.invalidateQueries({ queryKey: ['menu-items'], refetchType: 'all' });
       await queryClient.invalidateQueries({ queryKey: ['categories'], refetchType: 'all' });
+      
+      // Force refetch the current view
+      await queryClient.refetchQueries({ 
+        queryKey: ['menu-items', selectedCategory],
+      });
     },
     onError: () => {
       toast.error('Failed to save item');
