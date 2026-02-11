@@ -142,7 +142,7 @@ export function MenuPageClient({
   };
 
   // Loading state
-  if (isLoading) {
+  if (isLoading && initialMenuItems.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex items-center justify-center min-h-[400px]">

@@ -83,8 +83,10 @@ export default async function MenuPage() {
         'Cache-Control': 'no-cache',
       },
     });
-    const menuData = await menuResponse.json();
-    initialMenuItems = menuData.data || [];
+    if (menuResponse.ok) {
+      const menuData = await menuResponse.json();
+      initialMenuItems = menuData.data || [];
+    }
     
     // Fetch categories
     const categoriesResponse = await fetch(`${baseUrl}/api/menu/categories`, { cache: 'force-cache', next: { revalidate: 3600 } });

@@ -73,12 +73,12 @@ async function fetchMenu(filters?: MenuItemFilters): Promise<MenuData> {
     throw new Error('Failed to fetch categories');
   }
 
-  const menuItems = await menuResponse.json();
-  const categories = await categoriesResponse.json();
+  const menuData = await menuResponse.json();
+  const categoriesData = await categoriesResponse.json();
 
   return {
-    menuItems: Array.isArray(menuItems) ? menuItems : [],
-    categories: Array.isArray(categories) ? categories : [],
+    menuItems: menuData.data || (Array.isArray(menuData) ? menuData : []),
+    categories: categoriesData.data || (Array.isArray(categoriesData) ? categoriesData : []),
   };
 }
 
