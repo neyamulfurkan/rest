@@ -153,15 +153,9 @@ export default function AdminMenuPage() {
       toast.success(data.message || 'Item deleted successfully');
       setDeletingItemId(null);
       
-      // Clear all caches first
-      queryClient.removeQueries({ queryKey: ['menu-items'] });
-      queryClient.removeQueries({ queryKey: ['menu'] });
-      
-      // Force immediate refetch with no cache
-      await queryClient.refetchQueries({ 
-        queryKey: ['menu-items'],
-        type: 'active'
-      });
+      // Invalidate and refetch immediately
+      await queryClient.invalidateQueries({ queryKey: ['menu-items'], refetchType: 'all' });
+      await queryClient.invalidateQueries({ queryKey: ['menu'], refetchType: 'all' });
     },
     onError: (error: any) => {
       console.error('Delete error:', error);
@@ -213,16 +207,14 @@ export default function AdminMenuPage() {
       
       return responseData;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    onSuccess: async () => {
       toast.success(editingItem ? 'Item updated successfully' : 'Item created successfully');
       setIsFormOpen(false);
       setEditingItem(null);
       
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['menu-items'] });
-      }, 100);
+      // Invalidate and refetch immediately
+      await queryClient.invalidateQueries({ queryKey: ['menu-items'], refetchType: 'all' });
+      await queryClient.invalidateQueries({ queryKey: ['categories'], refetchType: 'all' });
     },
     onError: () => {
       toast.error('Failed to save item');
