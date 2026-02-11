@@ -2,10 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ShoppingCart, Star, Sparkles, Info } from 'lucide-react';
+import { ShoppingCart, Star, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { MenuItemWithRelations } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -27,8 +26,16 @@ export default function MenuItemCard({
   const [isHovered, setIsHovered] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
 
+  // Trigger animation on mount with slight delay
   useEffect(() => {
-    // Only fetch reviews on first hover - avoids 100+ API calls on page load
+    const timer = setTimeout(() => {
+      setHasAnimated(true);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Only fetch reviews on first hover - avoids 100+ API calls on page load
+  useEffect(() => {
     if (!isHovered || rating !== null) return;
     
     const timer = setTimeout(() => {
@@ -81,10 +88,7 @@ export default function MenuItemCard({
         transform: isHovered ? 'translateY(-8px)' : 'translateY(0)',
       }}
       onClick={handleCardClick}
-      onMouseEnter={() => {
-        setIsHovered(true);
-        if (!hasAnimated) setHasAnimated(true);
-      }}
+      onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Image Section with Gradient Overlay */}
