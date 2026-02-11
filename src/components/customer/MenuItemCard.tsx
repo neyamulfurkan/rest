@@ -28,15 +28,22 @@ export default function MenuItemCard({
   const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/menu/${item.id}/reviews`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setRating(data.data);
-        }
-      })
-      .catch(() => {});
-  }, [item.id]);
+    // Only fetch reviews on first hover - avoids 100+ API calls on page load
+    if (!isHovered || rating !== null) return;
+    
+    const timer = setTimeout(() => {
+      fetch(`/api/menu/${item.id}/reviews`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setRating(data.data);
+          }
+        })
+        .catch(() => {});
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [item.id, isHovered, rating]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -74,22 +81,11 @@ export default function MenuItemCard({
         transform: isHovered ? 'translateY(-8px)' : 'translateY(0)',
       }}
       onClick={handleCardClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      ref={(node) => {
-        if (!node || hasAnimated) return;
-        const observer = new IntersectionObserver(
-          ([entry]) => {
-            if (entry.isIntersecting) {
-              setHasAnimated(true);
-              observer.disconnect();
-            }
-          },
-          { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
-        );
-        observer.observe(node);
-        return () => observer.disconnect();
+      onMouseEnter={() => {
+        setIsHovered(true);
+        if (!hasAnimated) setHasAnimated(true);
       }}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Image Section with Gradient Overlay */}
       <div className="relative aspect-[4/3] w-full overflow-hidden shrink-0">
@@ -106,6 +102,10 @@ export default function MenuItemCard({
             )}
             loading="lazy"
             sizes="(max-width: 640px) 90vw, (max-width: 768px) 45vw, (max-width: 1024px) 30vw, 25vw"
+            quality={60}
+            priority={false}
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YzZjRmNiIvPjwvc3ZnPg=="
             onLoad={() => setImageLoaded(true)}
             onError={(e) => {
               const target = e.currentTarget as HTMLImageElement;

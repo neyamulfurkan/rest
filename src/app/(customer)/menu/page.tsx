@@ -76,12 +76,10 @@ export default async function MenuPage() {
     const settingsData = await settingsResponse.json();
     settings = settingsData.data || {};
     
-    // Fetch menu items (get all items regardless of restaurant for now)
-    const menuResponse = await fetch(`${baseUrl}/api/menu?limit=1000`, { 
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache',
-      },
+    // Fetch menu items - limit to 30 for faster initial load
+    const menuResponse = await fetch(`${baseUrl}/api/menu?limit=30`, { 
+      cache: 'force-cache',
+      next: { revalidate: 600 }, // 10 minute cache
     });
     if (menuResponse.ok) {
       const menuData = await menuResponse.json();

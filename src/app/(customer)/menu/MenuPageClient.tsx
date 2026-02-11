@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -21,18 +21,21 @@ import type { MenuItemWithRelations } from '@/types';
 
 type SortOption = 'popular' | 'price-low-high' | 'price-high-low';
 
+interface MenuPageClientProps {
+  restaurantName: string;
+  settings: any;
+  initialMenuItems: any[];
+  initialCategories: any[];
+}
+
 export function MenuPageClient({ 
   restaurantName, 
   settings, 
   initialMenuItems, 
   initialCategories 
-}: { 
-  restaurantName: string; 
-  settings: any; 
-  initialMenuItems: any[]; 
-  initialCategories: any[] 
-}) {
+}: MenuPageClientProps) {
   const { menuItems: clientMenuItems, categories: clientCategories, isLoading, error } = useMenu();
+  
   // Use server-side data initially, then client-side data
   const menuItems = initialMenuItems && initialMenuItems.length > 0 ? initialMenuItems : (clientMenuItems || []);
   const categories = initialCategories && initialCategories.length > 0 ? initialCategories : (clientCategories || []);
@@ -42,29 +45,28 @@ export function MenuPageClient({
 
   // State
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [selectedItem, setSelectedItem] = useState<MenuItemWithRelations | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [displayCount, setDisplayCount] = useState(20); // Show 20 items initially
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Debounced search (300ms delay)
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
   // Handle scroll for search bar transparency
-  React.useEffect(() => {
+  useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -101,31 +103,68 @@ export function MenuPageClient({
         break;
       case 'popular':
       default:
-        // Keep original order (assume sorted by popularity in DB)
         break;
     }
 
     return sorted;
   }, [menuItems, debouncedSearch, selectedCategory, sortBy]);
 
-  // Handlers
-  const handleCategoryClick = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-  };
+  // Limit visible items for performance (infinite scroll)
+  const visibleItems = useMemo(
+    () => filteredAndSortedItems.slice(0, displayCount),
+    [filteredAndSortedItems, displayCount]
+  );
 
-  const handleItemClick = (item: MenuItemWithRelations) => {
+  const hasMore = displayCount < filteredAndSortedItems.length;
+
+  // Load more handler
+  const loadMore = useCallback(() => {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setDisplayCount((prev) => Math.min(prev + 20, filteredAndSortedItems.length));
+      setIsLoadingMore(false);
+    }, 300);
+  }, [filteredAndSortedItems.length, isLoadingMore]);
+
+  // Infinite scroll effect
+  useEffect(() => {
+    if (!hasMore || isLoadingMore) return;
+
+    const handleScroll = () => {
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const threshold = document.documentElement.scrollHeight - 1000;
+
+      if (scrollPosition >= threshold) {
+        loadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, isLoadingMore, loadMore]);
+
+  // Reset displayCount when filters change
+  useEffect(() => {
+    setDisplayCount(20);
+  }, [debouncedSearch, selectedCategory, sortBy]);
+
+  // Handlers
+  const handleCategoryClick = useCallback((categoryId: string) => {
+    setSelectedCategory(categoryId);
+  }, []);
+
+  const handleItemClick = useCallback((item: MenuItemWithRelations) => {
     setSelectedItem(item);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleAddToCart = (item: MenuItemWithRelations) => {
-    // If item has customizations, open modal instead
+  const handleAddToCart = useCallback((item: MenuItemWithRelations) => {
     if (item.customizationGroups && item.customizationGroups.length > 0) {
       handleItemClick(item);
       return;
     }
 
-    // Add directly to cart if no customizations
     addItem(
       {
         menuItemId: item.id,
@@ -134,12 +173,17 @@ export function MenuPageClient({
       },
       1
     );
-  };
+  }, [addItem, handleItemClick]);
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
     setSelectedItem(null);
-  };
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+  }, []);
 
   // Loading state
   if (isLoading && initialMenuItems.length === 0) {
@@ -168,162 +212,56 @@ export function MenuPageClient({
     <>
       {/* SEO: Hidden h1 for menu page */}
       <h1 className="sr-only">{restaurantName} - Full Menu - Order Online</h1>
-    <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
-      {/* Search & Filter Bar - Sticky - COMPACT */}
-      <div 
-        className={cn(
-          'fixed top-16 md:top-20 left-0 right-0 z-30 border-b transition-all duration-500',
-          branding.headerTransparentOverMedia
-            ? 'backdrop-blur-md border-white/30 shadow-lg' 
-            : isScrolled 
-              ? 'backdrop-blur-md shadow-md border-neutral-200' 
-              : 'backdrop-blur-md border-neutral-200'
-        )}
-        style={{ 
-          backgroundColor: branding.headerTransparentOverMedia
-            ? 'rgba(0, 0, 0, 0.45)' 
-            : `${branding.headerBgColor}cc`,
-          color: branding.headerTransparentOverMedia ? '#ffffff' : branding.headerTextColor,
-        }}
-      >
-        <div className="container mx-auto px-3 py-2 md:py-3 max-w-7xl">
-          {/* Mobile: Single row with search + sort */}
-          <div className="flex md:hidden gap-2 mb-2">
-            <div className="relative flex-1">
-              <Search 
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4" 
-                style={{ color: branding.headerTransparentOverMedia ? 'rgba(255, 255, 255, 0.9)' : 'hsl(var(--muted-foreground))' }}
-              />
-              <Input
-                type="text"
-                placeholder="Search dishes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn(
-                  "pl-8 h-9 text-sm border-2 transition-colors duration-200",
-                  branding.headerTransparentOverMedia && "bg-white/20 border-white/40 text-white placeholder:text-white/80 focus:bg-white/30 focus:border-white/60"
-                )}
-                style={branding.headerTransparentOverMedia ? {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  borderColor: 'rgba(255, 255, 255, 0.4)',
-                  color: '#ffffff',
-                } : {}}
-              />
-            </div>
-            <Select
-              value={sortBy}
-              onValueChange={(value) => setSortBy(value as SortOption)}
-            >
-              <SelectTrigger 
-                className={cn(
-                  "w-[100px] h-9 text-sm border-2",
-                  branding.headerTransparentOverMedia && "bg-white/20 border-white/40 text-white hover:bg-white/30"
-                )}
-                style={branding.headerTransparentOverMedia ? {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  borderColor: 'rgba(255, 255, 255, 0.4)',
-                  color: '#ffffff',
-                } : {}}
-              >
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="popular">Popular</SelectItem>
-                <SelectItem value="price-low-high">Low to High</SelectItem>
-                <SelectItem value="price-high-low">High to Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Category Pills - Horizontal scroll */}
-          <div className="flex md:hidden gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            <Button
-              variant={selectedCategory === 'all' ? 'default' : 'outline'}
-              onClick={() => handleCategoryClick('all')}
-              size="sm"
-              className={cn(
-                "h-8 text-xs whitespace-nowrap shrink-0",
-                branding.headerTransparentOverMedia && selectedCategory !== 'all' && "border-white/50 text-white hover:bg-white/20 bg-white/10"
-              )}
-            >
-              All
-            </Button>
-            {categories?.map((category) => (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.id ? 'default' : 'outline'}
-                onClick={() => handleCategoryClick(category.id)}
-                size="sm"
-                className={cn(
-                  "h-8 text-xs whitespace-nowrap shrink-0",
-                  branding.headerTransparentOverMedia && selectedCategory !== category.id && "border-white/50 text-white hover:bg-white/20 bg-white/10"
-                )}
-              >
-                {category.name}
-              </Button>
-            ))}
-          </div>
-
-          {/* Desktop: Original layout */}
-          <div className="hidden md:flex gap-4 items-center">
-            <div className="relative md:w-2/5">
-              <Search 
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" 
-                style={{ color: branding.headerTransparentOverMedia ? 'rgba(255, 255, 255, 0.9)' : 'hsl(var(--muted-foreground))' }}
-              />
-              <Input
-                type="text"
-                placeholder="Search for dishes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn(
-                  "pl-10 w-full border-2 transition-colors duration-200",
-                  branding.headerTransparentOverMedia && "bg-white/20 border-white/40 text-white placeholder:text-white/80 focus:bg-white/30 focus:border-white/60"
-                )}
-                style={branding.headerTransparentOverMedia ? {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  borderColor: 'rgba(255, 255, 255, 0.4)',
-                  color: '#ffffff',
-                } : {}}
-              />
-            </div>
-
-            <div className="flex-1 overflow-x-auto scrollbar-hide">
-              <div className="flex gap-2 min-w-max md:min-w-0">
-                <Button
-                  variant={selectedCategory === 'all' ? 'default' : 'outline'}
-                  onClick={() => handleCategoryClick('all')}
-                  size="sm"
+      
+      <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--page-bg))' }}>
+        {/* Search & Filter Bar - Sticky - COMPACT */}
+        <div 
+          className={cn(
+            'fixed top-16 md:top-20 left-0 right-0 z-30 border-b transition-all duration-500',
+            branding.headerTransparentOverMedia
+              ? 'backdrop-blur-md border-white/30 shadow-lg' 
+              : isScrolled 
+                ? 'backdrop-blur-md shadow-md border-neutral-200' 
+                : 'backdrop-blur-md border-neutral-200'
+          )}
+          style={{ 
+            backgroundColor: branding.headerTransparentOverMedia
+              ? 'rgba(0, 0, 0, 0.45)' 
+              : `${branding.headerBgColor}cc`,
+            color: branding.headerTransparentOverMedia ? '#ffffff' : branding.headerTextColor,
+          }}
+        >
+          <div className="container mx-auto px-3 py-2 md:py-3 max-w-7xl">
+            {/* Mobile: Single row with search + sort */}
+            <div className="flex md:hidden gap-2 mb-2">
+              <div className="relative flex-1">
+                <Search 
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4" 
+                  style={{ color: branding.headerTransparentOverMedia ? 'rgba(255, 255, 255, 0.9)' : 'hsl(var(--muted-foreground))' }}
+                />
+                <Input
+                  type="text"
+                  placeholder="Search dishes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className={cn(
-                    branding.headerTransparentOverMedia && selectedCategory !== 'all' && "border-white/50 text-white hover:bg-white/20 bg-white/10"
+                    "pl-8 h-9 text-sm border-2 transition-colors duration-200",
+                    branding.headerTransparentOverMedia && "bg-white/20 border-white/40 text-white placeholder:text-white/80 focus:bg-white/30 focus:border-white/60"
                   )}
-                >
-                  All
-                </Button>
-                {categories?.map((category) => (
-                  <Button
-                    key={category.id}
-                    variant={selectedCategory === category.id ? 'default' : 'outline'}
-                    onClick={() => handleCategoryClick(category.id)}
-                    size="sm"
-                    className={cn(
-                      branding.headerTransparentOverMedia && selectedCategory !== category.id && "border-white/50 text-white hover:bg-white/20 bg-white/10"
-                    )}
-                  >
-                    {category.name}
-                  </Button>
-                ))}
+                  style={branding.headerTransparentOverMedia ? {
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    borderColor: 'rgba(255, 255, 255, 0.4)',
+                    color: '#ffffff',
+                  } : {}}
+                />
               </div>
-            </div>
-
-            <div className="md:w-auto">
               <Select
                 value={sortBy}
                 onValueChange={(value) => setSortBy(value as SortOption)}
               >
                 <SelectTrigger 
                   className={cn(
-                    "w-[200px] border-2",
+                    "w-[100px] h-9 text-sm border-2",
                     branding.headerTransparentOverMedia && "bg-white/20 border-white/40 text-white hover:bg-white/30"
                   )}
                   style={branding.headerTransparentOverMedia ? {
@@ -332,73 +270,196 @@ export function MenuPageClient({
                     color: '#ffffff',
                   } : {}}
                 >
-                  <SelectValue placeholder="Sort by" />
+                  <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="popular">Popular</SelectItem>
-                  <SelectItem value="price-low-high">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high-low">Price: High to Low</SelectItem>
+                  <SelectItem value="price-low-high">Low to High</SelectItem>
+                  <SelectItem value="price-high-low">High to Low</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Category Pills - Horizontal scroll - Mobile */}
+            <div className="flex md:hidden gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <Button
+                variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                onClick={() => handleCategoryClick('all')}
+                size="sm"
+                className={cn(
+                  "h-8 text-xs whitespace-nowrap shrink-0",
+                  branding.headerTransparentOverMedia && selectedCategory !== 'all' && "border-white/50 text-white hover:bg-white/20 bg-white/10"
+                )}
+              >
+                All
+              </Button>
+              {categories?.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.id ? 'default' : 'outline'}
+                  onClick={() => handleCategoryClick(category.id)}
+                  size="sm"
+                  className={cn(
+                    "h-8 text-xs whitespace-nowrap shrink-0",
+                    branding.headerTransparentOverMedia && selectedCategory !== category.id && "border-white/50 text-white hover:bg-white/20 bg-white/10"
+                  )}
+                >
+                  {category.name}
+                </Button>
+              ))}
+            </div>
+
+            {/* Desktop: Original layout */}
+            <div className="hidden md:flex gap-4 items-center">
+              <div className="relative md:w-2/5">
+                <Search 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" 
+                  style={{ color: branding.headerTransparentOverMedia ? 'rgba(255, 255, 255, 0.9)' : 'hsl(var(--muted-foreground))' }}
+                />
+                <Input
+                  type="text"
+                  placeholder="Search for dishes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={cn(
+                    "pl-10 w-full border-2 transition-colors duration-200",
+                    branding.headerTransparentOverMedia && "bg-white/20 border-white/40 text-white placeholder:text-white/80 focus:bg-white/30 focus:border-white/60"
+                  )}
+                  style={branding.headerTransparentOverMedia ? {
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    borderColor: 'rgba(255, 255, 255, 0.4)',
+                    color: '#ffffff',
+                  } : {}}
+                />
+              </div>
+
+              <div className="flex-1 overflow-x-auto scrollbar-hide">
+                <div className="flex gap-2 min-w-max md:min-w-0">
+                  <Button
+                    variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                    onClick={() => handleCategoryClick('all')}
+                    size="sm"
+                    className={cn(
+                      branding.headerTransparentOverMedia && selectedCategory !== 'all' && "border-white/50 text-white hover:bg-white/20 bg-white/10"
+                    )}
+                  >
+                    All
+                  </Button>
+                  {categories?.map((category) => (
+                    <Button
+                      key={category.id}
+                      variant={selectedCategory === category.id ? 'default' : 'outline'}
+                      onClick={() => handleCategoryClick(category.id)}
+                      size="sm"
+                      className={cn(
+                        branding.headerTransparentOverMedia && selectedCategory !== category.id && "border-white/50 text-white hover:bg-white/20 bg-white/10"
+                      )}
+                    >
+                      {category.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="md:w-auto">
+                <Select
+                  value={sortBy}
+                  onValueChange={(value) => setSortBy(value as SortOption)}
+                >
+                  <SelectTrigger 
+                    className={cn(
+                      "w-[200px] border-2",
+                      branding.headerTransparentOverMedia && "bg-white/20 border-white/40 text-white hover:bg-white/30"
+                    )}
+                    style={branding.headerTransparentOverMedia ? {
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      borderColor: 'rgba(255, 255, 255, 0.4)',
+                      color: '#ffffff',
+                    } : {}}
+                  >
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="popular">Popular</SelectItem>
+                    <SelectItem value="price-low-high">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high-low">Price: High to Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Recommended Items */}
-      <div className="pt-[130px] sm:pt-[130px] md:pt-[85px]">
-        {restaurantId && (
-          <RecommendedItems
-            restaurantId={restaurantId}
-            onItemClick={handleItemClick}
-          />
-        )}
-      </div>
+        {/* Recommended Items */}
+        <div className="pt-[130px] sm:pt-[130px] md:pt-[85px]">
+          {restaurantId && (
+            <RecommendedItems
+              restaurantId={restaurantId}
+              onItemClick={handleItemClick}
+            />
+          )}
+        </div>
 
-      {/* Menu Grid */}
-      <div className="container mx-auto px-4 pb-8 max-w-7xl">
-        {filteredAndSortedItems.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-neutral-500 text-lg">No items found</p>
-            {(debouncedSearch || selectedCategory !== 'all') && (
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedCategory('all');
-                }}
-                className="mt-4"
-              >
-                Clear filters
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div
-            className="
-              grid
-              grid-cols-2
-              sm:grid-cols-2
-              md:grid-cols-3
-              lg:grid-cols-4
-              gap-3
-              sm:gap-4
-              md:gap-6
-            "
-          >
-            {filteredAndSortedItems.map((item) => (
-              <MenuItemCard
-                key={item.id}
-                item={item}
-                onAddToCart={handleAddToCart}
-                onItemClick={handleItemClick}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+        {/* Menu Grid */}
+        <div className="container mx-auto px-4 pb-8 max-w-7xl">
+          {/* Results count */}
+          {filteredAndSortedItems.length > 0 && (
+            <p className="text-sm mb-4 text-muted-foreground">
+              Showing {visibleItems.length} of {filteredAndSortedItems.length} items
+            </p>
+          )}
 
-      {/* Menu Item Modal */}
+          {filteredAndSortedItems.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-neutral-500 text-lg">No items found</p>
+              {(debouncedSearch || selectedCategory !== 'all') && (
+                <Button
+                  variant="ghost"
+                  onClick={handleClearFilters}
+                  className="mt-4"
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                {visibleItems.map((item) => (
+                  <MenuItemCard
+                    key={item.id}
+                    item={item}
+                    onAddToCart={handleAddToCart}
+                    onItemClick={handleItemClick}
+                  />
+                ))}
+              </div>
+
+              {/* Load More Button / Loading Indicator */}
+              {hasMore && (
+                <div className="flex justify-center mt-8 mb-4">
+                  {isLoadingMore ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-neutral-300 border-t-primary" />
+                      <span>Loading more items...</span>
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={loadMore} 
+                      variant="outline" 
+                      size="lg"
+                      className="min-w-[200px]"
+                    >
+                      Load More Items
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Menu Item Modal */}
         <MenuItemModal
           item={selectedItem}
           isOpen={isModalOpen}
