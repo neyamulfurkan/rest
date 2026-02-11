@@ -135,6 +135,10 @@ export default function AdminMenuPage() {
       console.log('Deleting item:', id);
       const response = await fetch(`/api/menu/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
       });
       console.log('Delete response status:', response.status);
       const data = await response.json();
@@ -149,8 +153,15 @@ export default function AdminMenuPage() {
       toast.success(data.message || 'Item deleted successfully');
       setDeletingItemId(null);
       
-      // Force immediate refetch
-      await queryClient.refetchQueries({ queryKey: ['menu-items'] });
+      // Clear all caches first
+      queryClient.removeQueries({ queryKey: ['menu-items'] });
+      queryClient.removeQueries({ queryKey: ['menu'] });
+      
+      // Force immediate refetch with no cache
+      await queryClient.refetchQueries({ 
+        queryKey: ['menu-items'],
+        type: 'active'
+      });
     },
     onError: (error: any) => {
       console.error('Delete error:', error);
