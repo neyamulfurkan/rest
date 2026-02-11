@@ -67,10 +67,16 @@ export async function GET(request: NextRequest) {
     // Build where clause
     const where: any = {};
     
-    // Only filter by restaurantId if explicitly provided
+    // Get restaurantId from query params OR get the first restaurant
     const restaurantIdParam = searchParams.get('restaurantId');
     if (restaurantIdParam) {
       where.restaurantId = restaurantIdParam;
+    } else {
+      // If no restaurantId provided, get the first restaurant (single-restaurant mode)
+      const restaurant = await prisma.restaurant.findFirst();
+      if (restaurant) {
+        where.restaurantId = restaurant.id;
+      }
     }
 
     if (validatedParams.categoryId) {
