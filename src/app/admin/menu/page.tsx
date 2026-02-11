@@ -146,20 +146,38 @@ export default function AdminMenuPage() {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to delete item');
       }
-      return data;
+      return { data, id };
     },
-    onSuccess: async (data) => {
-      console.log('Delete successful');
+    onSuccess: async ({ data, id }) => {
+      console.log('Delete successful, removing item:', id);
       toast.success(data.message || 'Item deleted successfully');
       setDeletingItemId(null);
       
-      // Invalidate and refetch immediately
-      await queryClient.invalidateQueries({ queryKey: ['menu-items'], refetchType: 'all' });
-      await queryClient.invalidateQueries({ queryKey: ['menu'], refetchType: 'all' });
+      // Optimistically remove from UI immediately
+      queryClient.setQueryData(['menu-items', selectedCategory], (old: any) => {
+        if (!old || !Array.isArray(old)) return [];
+        return old.filter((item: MenuItemWithRelations) => item.id !== id);
+      });
+      
+      // Clear all menu caches completely
+      queryClient.removeQueries({ queryKey: ['menu-items'] });
+      queryClient.removeQueries({ queryKey: ['menu'] });
+      
+      // Refetch fresh data
+      await queryClient.refetchQueries({ 
+        queryKey: ['menu-items', selectedCategory],
+      });
     },
     onError: (error: any) => {
       console.error('Delete error:', error);
-      toast.error(error.message || 'Failed to delete item');
+      // If item is already deleted (404), just refresh the cache
+      if (error.message.includes('not found')) {
+        toast.info('Item already removed, refreshing...');
+        queryClient.removeQueries({ queryKey: ['menu-items'] });
+        queryClient.refetchQueries({ queryKey: ['menu-items', selectedCategory] });
+      } else {
+        toast.error(error.message || 'Failed to delete item');
+      }
       setDeletingItemId(null);
     },
   });
@@ -243,9 +261,10 @@ export default function AdminMenuPage() {
     // Verify item exists before attempting delete
     const itemExists = filteredItems?.some((item: MenuItemWithRelations) => item.id === id);
     if (!itemExists) {
-      toast.error('Item no longer exists');
+      toast.info('Item already removed, refreshing...');
       // Force refresh to sync UI with database
-      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+      queryClient.removeQueries({ queryKey: ['menu-items'] });
+      queryClient.refetchQueries({ queryKey: ['menu-items', selectedCategory] });
       return;
     }
     setDeletingItemId(id);
