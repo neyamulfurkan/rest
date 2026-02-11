@@ -133,9 +133,7 @@ export async function GET(request: NextRequest) {
       take: validatedParams.limit,
     });
 
-    const cacheControl = validatedParams.isAvailable !== undefined && validatedParams.isAvailable
-      ? 'public, s-maxage=60, stale-while-revalidate=120'
-      : 'public, s-maxage=300, stale-while-revalidate=600';
+    const cacheControl = 'no-store, no-cache, must-revalidate, max-age=0';
 
     // Always return consistent structure with data array
     return NextResponse.json(
