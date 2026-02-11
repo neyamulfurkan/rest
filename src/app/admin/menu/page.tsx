@@ -36,7 +36,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  
 } from '@/components/ui/sheet';
 import { MenuItemForm } from '@/components/admin/MenuItemForm';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
@@ -70,41 +69,60 @@ export default function AdminMenuPage() {
 
   const queryClient = useQueryClient();
 
-  // Fetch categories directly
+  // Clear all caches on component mount to prevent ghost items
+  React.useEffect(() => {
+    console.log('🔄 Admin Menu Page mounted - clearing stale caches');
+    queryClient.removeQueries({ queryKey: ['menu-items'] });
+    queryClient.removeQueries({ queryKey: ['menu'] });
+  }, [queryClient]);
+
+  // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const response = await fetch('/api/menu?type=categories');
+      const response = await fetch('/api/menu?type=categories', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
       if (!response.ok) throw new Error('Failed to fetch categories');
       return response.json();
     },
+    staleTime: 0,
+    refetchOnWindowFocus: false,
   });
 
-  // Fetch menu items
-  const { data: menuItemsData, isLoading: itemsLoading } = useQuery({
+  // Fetch menu items - ALWAYS fresh from database
+  const { data: menuItemsData, isLoading: itemsLoading, refetch: refetchMenuItems } = useQuery({
     queryKey: ['menu-items', selectedCategory],
     queryFn: async () => {
       const url = selectedCategory
         ? `/api/menu?categoryId=${selectedCategory}&limit=1000`
         : '/api/menu?limit=1000';
-      console.log('Fetching menu items from:', url);
+      
+      console.log('📥 Fetching menu items from:', url);
+      
       const response = await fetch(url, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
         },
       });
+      
       if (!response.ok) throw new Error('Failed to fetch menu items');
+      
       const result = await response.json();
-      console.log('Menu items response:', result);
       const items = result.data || [];
-      console.log('Parsed items count:', items.length);
+      
+      console.log('✅ Fetched', items.length, 'items from database');
+      
       return items;
     },
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
+    retry: false,
   });
 
   const menuItems = menuItemsData || [];
@@ -132,7 +150,8 @@ export default function AdminMenuPage() {
   // Delete item mutation
   const deleteItemMutation = useMutation({
     mutationFn: async (id: string) => {
-      console.log('Deleting item:', id);
+      console.log('🗑️ Deleting item:', id);
+      
       const response = await fetch(`/api/menu/${id}`, {
         method: 'DELETE',
         headers: {
@@ -140,45 +159,49 @@ export default function AdminMenuPage() {
           'Pragma': 'no-cache',
         },
       });
-      console.log('Delete response status:', response.status);
+      
       const data = await response.json();
-      console.log('Delete response data:', data);
+      console.log('Delete response:', response.status, data);
+      
       if (!response.ok) {
         throw new Error(data.error || 'Failed to delete item');
       }
+      
       return { data, id };
     },
     onSuccess: async ({ data, id }) => {
-      console.log('Delete successful, removing item:', id);
+      console.log('✅ Item deleted successfully:', id);
       toast.success(data.message || 'Item deleted successfully');
       setDeletingItemId(null);
       
-      // Optimistically remove from UI immediately
-      queryClient.setQueryData(['menu-items', selectedCategory], (old: any) => {
-        if (!old || !Array.isArray(old)) return [];
-        return old.filter((item: MenuItemWithRelations) => item.id !== id);
-      });
-      
-      // Clear all menu caches completely
+      // Clear all menu-related caches completely
       queryClient.removeQueries({ queryKey: ['menu-items'] });
       queryClient.removeQueries({ queryKey: ['menu'] });
       
-      // Refetch fresh data
-      await queryClient.refetchQueries({ 
-        queryKey: ['menu-items', selectedCategory],
-      });
+      // Wait a moment then fetch fresh data
+      setTimeout(async () => {
+        await refetchMenuItems();
+      }, 100);
     },
-    onError: (error: any) => {
-      console.error('Delete error:', error);
-      // If item is already deleted (404), just refresh the cache
+    onError: async (error: any) => {
+      console.error('❌ Delete error:', error);
+      setDeletingItemId(null);
+      
+      // If item doesn't exist (404), it was already deleted - just sync UI with DB
       if (error.message.includes('not found')) {
-        toast.info('Item already removed, refreshing...');
+        console.log('⚠️ Item already deleted, syncing UI with database...');
+        toast.info('Item was already removed. Refreshing...');
+        
+        // Clear cache and fetch fresh data
         queryClient.removeQueries({ queryKey: ['menu-items'] });
-        queryClient.refetchQueries({ queryKey: ['menu-items', selectedCategory] });
+        queryClient.removeQueries({ queryKey: ['menu'] });
+        
+        setTimeout(async () => {
+          await refetchMenuItems();
+        }, 100);
       } else {
         toast.error(error.message || 'Failed to delete item');
       }
-      setDeletingItemId(null);
     },
   });
 
@@ -211,6 +234,8 @@ export default function AdminMenuPage() {
       const url = editingItem ? `/api/menu/${editingItem.id}` : '/api/menu';
       const method = editingItem ? 'PATCH' : 'POST';
       
+      console.log('💾 Saving menu item:', method, url);
+      
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -223,6 +248,8 @@ export default function AdminMenuPage() {
         throw new Error(responseData.error || 'Failed to save item');
       }
       
+      console.log('✅ Item saved successfully:', responseData);
+      
       return responseData;
     },
     onSuccess: async (responseData) => {
@@ -230,22 +257,15 @@ export default function AdminMenuPage() {
       setIsFormOpen(false);
       setEditingItem(null);
       
-      // If creating new item, optimistically add it to cache
-      if (!editingItem && responseData.data) {
-        queryClient.setQueryData(['menu-items', selectedCategory], (old: any) => {
-          if (!old || !Array.isArray(old)) return [responseData.data];
-          return [...old, responseData.data];
-        });
-      }
+      // Clear all menu-related caches
+      queryClient.removeQueries({ queryKey: ['menu-items'] });
+      queryClient.removeQueries({ queryKey: ['menu'] });
+      queryClient.removeQueries({ queryKey: ['categories'] });
       
-      // Invalidate all menu queries to ensure fresh data everywhere
-      await queryClient.invalidateQueries({ queryKey: ['menu-items'], refetchType: 'all' });
-      await queryClient.invalidateQueries({ queryKey: ['categories'], refetchType: 'all' });
-      
-      // Force refetch the current view
-      await queryClient.refetchQueries({ 
-        queryKey: ['menu-items', selectedCategory],
-      });
+      // Wait a moment then fetch fresh data
+      setTimeout(async () => {
+        await refetchMenuItems();
+      }, 100);
     },
     onError: () => {
       toast.error('Failed to save item');
@@ -271,25 +291,10 @@ export default function AdminMenuPage() {
   };
 
   const handleDeleteItem = (id: string) => {
-    // Verify item exists before attempting delete
-    const itemExists = filteredItems?.some((item: MenuItemWithRelations) => item.id === id);
-    if (!itemExists) {
-      toast.info('Item already removed, refreshing...');
-      // Force refresh to sync UI with database
-      queryClient.removeQueries({ queryKey: ['menu-items'] });
-      queryClient.refetchQueries({ queryKey: ['menu-items', selectedCategory] });
-      return;
-    }
     setDeletingItemId(id);
   };
 
   const handleToggleAvailability = (id: string, currentState: boolean) => {
-    // Check if item still exists in the list
-    const itemExists = menuItems?.some((item: MenuItemWithRelations) => item.id === id);
-    if (!itemExists) {
-      console.warn('Item no longer exists, skipping availability toggle');
-      return;
-    }
     toggleAvailabilityMutation.mutate({ id, isAvailable: !currentState });
   };
 
